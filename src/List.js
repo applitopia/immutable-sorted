@@ -17,6 +17,7 @@ import {
   OwnerID,
   MakeRef,
   SetRef,
+  GetRef,
   wrapIndex,
   wholeSlice,
   resolveBegin,
@@ -430,7 +431,7 @@ function updateList(list, index, value) {
     );
   }
 
-  if (!didAlter.value) {
+  if (!GetRef(didAlter)) {
     return list;
   }
 

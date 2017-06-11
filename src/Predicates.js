@@ -42,8 +42,13 @@ export function isValueObject(maybeValue) {
     typeof maybeValue.hashCode === 'function');
 }
 
+export function isSorted(maybeSorted) {
+  return !!(maybeSorted && maybeSorted[IS_SORTED_SENTINEL]);
+}
+
 export const IS_ITERABLE_SENTINEL = '@@__IMMUTABLE_ITERABLE__@@';
 export const IS_KEYED_SENTINEL = '@@__IMMUTABLE_KEYED__@@';
 export const IS_INDEXED_SENTINEL = '@@__IMMUTABLE_INDEXED__@@';
 export const IS_ORDERED_SENTINEL = '@@__IMMUTABLE_ORDERED__@@';
 export const IS_RECORD_SENTINEL = '@@__IMMUTABLE_RECORD__@@';
+export const IS_SORTED_SENTINEL = '@@__IMMUTABLE_SORTED__@@';

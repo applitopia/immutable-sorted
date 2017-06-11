@@ -13,7 +13,6 @@ import { emptyMap, MapPrototype } from './Map';
 import { DELETE } from './TrieUtils';
 import { sortFactory } from './Operations';
 import assertNotInfinite from './utils/assertNotInfinite';
-
 import { OrderedSet } from './OrderedSet';
 
 export class Set extends SetCollection {
@@ -66,7 +65,7 @@ export class Set extends SetCollection {
   // @pragma Modification
 
   add(value) {
-    return updateSet(this, this._map.set(value, true));
+    return updateSet(this, this._map.set(value, value));
   }
 
   remove(value) {
@@ -156,7 +155,7 @@ export class Set extends SetCollection {
   }
 
   __iterator(type, reverse) {
-    return this._map.map((_, k) => k).__iterator(type, reverse);
+    return this._map.__iterator(type, reverse);
   }
 
   __ensureOwner(ownerID) {

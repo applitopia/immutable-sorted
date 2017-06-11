@@ -1,0 +1,378 @@
+///<reference path='../resources/jest.d.ts'/>
+
+import * as jasmineCheck from 'jasmine-check';
+jasmineCheck.install();
+
+import { is, List, Range, Record, Seq, SortedMap } from '../';
+
+describe('SortedMap', () => {
+
+  it('converts from object', () => {
+    let m = SortedMap({a: 'A', b: 'B', c: 'C'});
+    expect(m.size).toBe(3);
+    expect(m.get('a')).toBe('A');
+    expect(m.get('b')).toBe('B');
+    expect(m.get('c')).toBe('C');
+  });
+
+  it('constructor provides initial values', () => {
+    let m = SortedMap({a: 'A', b: 'B', c: 'C'});
+    expect(m.size).toBe(3);
+    expect(m.get('a')).toBe('A');
+    expect(m.get('b')).toBe('B');
+    expect(m.get('c')).toBe('C');
+  });
+
+  it('constructor provides initial values as array of entries', () => {
+    let m = SortedMap([['a', 'A'], ['b', 'B'], ['c', 'C']]);
+    expect(m.size).toBe(3);
+    expect(m.get('a')).toBe('A');
+    expect(m.get('b')).toBe('B');
+    expect(m.get('c')).toBe('C');
+  });
+
+  it('constructor provides initial values as sequence', () => {
+    let s = Seq({a: 'A', b: 'B', c: 'C'});
+    let m = SortedMap(s);
+    expect(m.size).toBe(3);
+    expect(m.get('a')).toBe('A');
+    expect(m.get('b')).toBe('B');
+    expect(m.get('c')).toBe('C');
+  });
+
+  it('constructor provides initial values as list of lists', () => {
+    let l = List([
+      List(['a', 'A']),
+      List(['b', 'B']),
+      List(['c', 'C']),
+    ]);
+    let m = SortedMap(l);
+    expect(m.size).toBe(3);
+    expect(m.get('a')).toBe('A');
+    expect(m.get('b')).toBe('B');
+    expect(m.get('c')).toBe('C');
+  });
+
+  it('constructor is identity when provided map', () => {
+    let m1 = SortedMap({a: 'A', b: 'B', c: 'C'});
+    let m2 = SortedMap(m1);
+    expect(m2).toBe(m1);
+  });
+
+  it('does not accept a scalar', () => {
+    expect(() => {
+      SortedMap(3 as any);
+    }).toThrow('Expected Array or collection object of [k, v] entries, or keyed object: 3');
+  });
+
+  it('does not accept strings (collection, but scalar)', () => {
+    expect(() => {
+      SortedMap('abc');
+    }).toThrow();
+  });
+
+  it('does not accept non-entries array', () => {
+    expect(() => {
+      SortedMap([1, 2, 3] as any);
+    }).toThrow('Expected [K, V] tuple: 1');
+  });
+
+  it('accepts non-collection array-like objects as keyed collections', () => {
+    let m = SortedMap({ length: 3, 1: 'one' });
+    expect(m.get('length')).toBe(3);
+    expect(m.get('1')).toBe('one');
+    expect(m.toJS()).toEqual({ length: 3, 1: 'one' });
+  });
+
+  it('accepts flattened pairs via of()', () => {
+    let m: SortedMap<any, any> = SortedMap.of(1, 'a', 2, 'b', 3, 'c');
+    expect(m.size).toBe(3);
+    expect(m.get(1)).toBe('a');
+    expect(m.get(2)).toBe('b');
+    expect(m.get(3)).toBe('c');
+  });
+
+  it('does not accept mismatched flattened pairs via of()', () => {
+    expect(() => {
+      SortedMap.of(1, 2, 3);
+    }).toThrow('Missing value for key: 3');
+  });
+
+  it('converts back to JS object', () => {
+    let m = SortedMap({a: 'A', b: 'B', c: 'C'});
+    expect(m.toObject()).toEqual({a: 'A', b: 'B', c: 'C'});
+  });
+
+  it('iterates values', () => {
+    let m = SortedMap({a: 'A', b: 'B', c: 'C'});
+    let iterator = jest.genMockFunction();
+    m.forEach(iterator);
+    expect(iterator.mock.calls).toEqual([
+      ['A', 'a', m],
+      ['B', 'b', m],
+      ['C', 'c', m],
+    ]);
+  });
+
+  it('merges two maps', () => {
+    let m1 = SortedMap({a: 'A', b: 'B', c: 'C'});
+    let m2 = SortedMap({wow: 'OO', d: 'DD', b: 'BB'});
+    expect(m2.toObject()).toEqual({wow: 'OO', d: 'DD', b: 'BB'});
+    let m3 = m1.merge(m2);
+    expect(m3.toObject()).toEqual({a: 'A', b: 'BB', c: 'C', wow: 'OO', d: 'DD'});
+  });
+
+  it('accepts null as a key', () => {
+    let m1 = SortedMap<any, any>();
+    let m2 = m1.set(null, 'null');
+    let m3 = m2.remove(null);
+    expect(m1.size).toBe(0);
+    expect(m2.size).toBe(1);
+    expect(m3.size).toBe(0);
+    expect(m2.get(null)).toBe('null');
+  });
+
+  it('is persistent to sets', () => {
+    let m1 = SortedMap();
+    let m2 = m1.set('a', 'Aardvark');
+    let m3 = m2.set('b', 'Baboon');
+    let m4 = m3.set('c', 'Canary');
+    let m5 = m4.set('b', 'Bonobo');
+    expect(m1.size).toBe(0);
+    expect(m2.size).toBe(1);
+    expect(m3.size).toBe(2);
+    expect(m4.size).toBe(3);
+    expect(m5.size).toBe(3);
+    expect(m3.get('b')).toBe('Baboon');
+    expect(m5.get('b')).toBe('Bonobo');
+  });
+
+  it('is persistent to deletes', () => {
+    let m1 = SortedMap();
+    let m2 = m1.set('a', 'Aardvark');
+    let m3 = m2.set('b', 'Baboon');
+    let m4 = m3.set('c', 'Canary');
+    let m5 = m4.remove('b');
+    expect(m1.size).toBe(0);
+    expect(m2.size).toBe(1);
+    expect(m3.size).toBe(2);
+    expect(m4.size).toBe(3);
+    expect(m5.size).toBe(2);
+    expect(m3.has('b')).toBe(true);
+    expect(m3.get('b')).toBe('Baboon');
+    expect(m5.has('b')).toBe(false);
+    expect(m5.get('b')).toBe(undefined);
+    expect(m5.get('c')).toBe('Canary');
+  });
+
+  check.it('deletes down to empty map', [gen.posInt], size => {
+    let m = Range(0, size).toSortedMap();
+    expect(m.size).toBe(size);
+    for (let ii = size - 1; ii >= 0; ii--) {
+      m = m.remove(ii);
+      expect(m.size).toBe(ii);
+    }
+    expect(m).toBe(SortedMap());
+  });
+
+  it('can map many items', () => {
+    let m = SortedMap();
+    for (let ii = 0; ii < 2000; ii++) {
+       m = m.set('thing:' + ii, ii);
+    }
+    expect(m.size).toBe(2000);
+    expect(m.get('thing:1234')).toBe(1234);
+  });
+
+  it('can use weird keys', () => {
+    let m: SortedMap<any, any> = SortedMap()
+      .set(NaN, 1)
+      .set(Infinity, 2)
+      .set(-Infinity, 3);
+
+    expect(m.get(NaN)).toBe(1);
+    expect(m.get(Infinity)).toBe(2);
+    expect(m.get(-Infinity)).toBe(3);
+  });
+
+  it('can map items known to hash collide', () => {
+    // make a big map, so it hashmaps
+    let m: SortedMap<any, any> = Range(0, 32).toSortedMap();
+    m = m.set('AAA', 'letters').set(64545, 'numbers');
+    expect(m.size).toBe(34);
+    expect(m.get('AAA')).toEqual('letters');
+    expect(m.get(64545)).toEqual('numbers');
+  });
+
+  it('can progressively add items known to collide', () => {
+    // make a big map, so it hashmaps
+    let map: SortedMap<any, any> = Range(0, 32).toSortedMap();
+    map = map.set('@', '@');
+    map = map.set(64, 64);
+    map = map.set(96, 96);
+    expect(map.size).toBe(35);
+    expect(map.get('@')).toBe('@');
+    expect(map.get(64)).toBe(64);
+    expect(map.get(96)).toBe(96);
+  });
+
+  it('maps values', () => {
+    let m = SortedMap({a: 'a', b: 'b', c: 'c'});
+    let r = m.map(value => value.toUpperCase());
+    expect(r.toObject()).toEqual({a: 'A', b: 'B', c: 'C'});
+  });
+
+  it('maps keys', () => {
+    let m = SortedMap({a: 'a', b: 'b', c: 'c'});
+    let r = m.mapKeys(key => key.toUpperCase());
+    expect(r.toObject()).toEqual({A: 'a', B: 'b', C: 'c'});
+  });
+
+  it('filters values', () => {
+    let m = SortedMap({a: 1, b: 2, c: 3, d: 4, e: 5, f: 6});
+    let r = m.filter(value => value % 2 === 1);
+    expect(r.toObject()).toEqual({a: 1, c: 3, e: 5});
+  });
+
+  it('filterNots values', () => {
+    let m = SortedMap({a: 1, b: 2, c: 3, d: 4, e: 5, f: 6});
+    let r = m.filterNot(value => value % 2 === 1);
+    expect(r.toObject()).toEqual({b: 2, d: 4, f: 6});
+  });
+
+  it('derives keys', () => {
+    let v = SortedMap({a: 1, b: 2, c: 3, d: 4, e: 5, f: 6});
+    expect(v.keySeq().toArray()).toEqual(['a', 'b', 'c', 'd', 'e', 'f']);
+  });
+
+  it('flips keys and values', () => {
+    let v = SortedMap({a: 1, b: 2, c: 3, d: 4, e: 5, f: 6});
+    expect(v.flip().toObject()).toEqual({1: 'a', 2: 'b', 3: 'c', 4: 'd', 5: 'e', 6: 'f'});
+  });
+
+  it('can convert to a list', () => {
+    let m = SortedMap({a: 1, b: 2, c: 3});
+    let v = m.toList();
+    let k = m.keySeq().toList();
+    expect(v.size).toBe(3);
+    expect(k.size).toBe(3);
+    expect(v.get(1)).toBe(2);
+    expect(k.get(1)).toBe('b');
+  });
+
+  check.it('works like an object', {maxSize: 50}, [gen.object(gen.JSONPrimitive)], obj => {
+    let map = SortedMap(obj);
+    Object.keys(obj).forEach(key => {
+      expect(map.get(key)).toBe(obj[key]);
+      expect(map.has(key)).toBe(true);
+    });
+    Object.keys(obj).forEach(key => {
+      expect(map.get(key)).toBe(obj[key]);
+      expect(map.has(key)).toBe(true);
+      map = map.remove(key);
+      expect(map.get(key)).toBe(undefined);
+      expect(map.has(key)).toBe(false);
+    });
+  });
+
+  check.it('sets', {maxSize: 5000}, [gen.posInt], len => {
+    let map = SortedMap();
+    for (let ii = 0; ii < len; ii++) {
+      expect(map.size).toBe(ii);
+      map = map.set('' + ii, ii);
+    }
+    expect(map.size).toBe(len);
+    expect(is(map.toSet(), Range(0, len).toSet())).toBe(true);
+  });
+
+  check.it('has and get', {maxSize: 5000}, [gen.posInt], len => {
+    let map = Range(0, len).toKeyedSeq().mapKeys(x => '' + x).toSortedMap();
+    for (let ii = 0; ii < len; ii++) {
+      expect(map.get('' + ii)).toBe(ii);
+      expect(map.has('' + ii)).toBe(true);
+    }
+  });
+
+  check.it('deletes', {maxSize: 5000}, [gen.posInt], len => {
+    let map = Range(0, len).toSortedMap();
+    for (let ii = 0; ii < len; ii++) {
+      expect(map.size).toBe(len - ii);
+      map = map.remove(ii);
+    }
+    expect(map.size).toBe(0);
+    expect(map.toObject()).toEqual({});
+  });
+
+  check.it('deletes from transient', {maxSize: 5000}, [gen.posInt], len => {
+    let map = Range(0, len).toSortedMap().asMutable();
+    for (let ii = 0; ii < len; ii++) {
+      expect(map.size).toBe(len - ii);
+      map.remove(ii);
+    }
+    expect(map.size).toBe(0);
+    expect(map.toObject()).toEqual({});
+  });
+
+  check.it('iterates through all entries', [gen.posInt], len => {
+    let v = Range(0, len).toSortedMap();
+    let a = v.toArray();
+    let iter = v.entries();
+    for (let ii = 0; ii < len; ii++) {
+      delete a[ iter.next().value[0] ];
+    }
+    expect(a).toEqual(new Array(len));
+  });
+
+  it('allows chained mutations', () => {
+    let m1 = SortedMap();
+    let m2 = m1.set('a', 1);
+    let m3 = m2.withMutations(m => m.set('b', 2).set('c', 3));
+    let m4 = m3.set('d', 4);
+
+    expect(m1.toObject()).toEqual({});
+    expect(m2.toObject()).toEqual({a: 1});
+    expect(m3.toObject()).toEqual({a: 1, b: 2, c: 3});
+    expect(m4.toObject()).toEqual({a: 1, b: 2, c: 3, d: 4});
+  });
+
+  it('chained mutations does not result in new empty map instance', () => {
+    let v1 = SortedMap({x: 1});
+    let v2 = v1.withMutations(v => v.set('y', 2).delete('x').delete('y'));
+    expect(v2).toBe(SortedMap());
+  });
+
+  it('expresses value equality with unordered sequences', () => {
+    let m1 = SortedMap({ A: 1, B: 2, C: 3 });
+    let m2 = SortedMap({ C: 3, B: 2, A: 1 });
+    expect(is(m1, m2)).toBe(true);
+  });
+
+  it('deletes all the provided keys', () => {
+    let NOT_SET = undefined;
+    let m1 = SortedMap({ A: 1, B: 2, C: 3 });
+    let m2 = m1.deleteAll(["A", "B"]);
+    expect(m2.get("A")).toBe(NOT_SET);
+    expect(m2.get("B")).toBe(NOT_SET);
+    expect(m2.get("C")).toBe(3);
+    expect(m2.size).toBe(1);
+  });
+
+  it('remains unchanged when no keys are provided', () => {
+    let m1 = SortedMap({ A: 1, B: 2, C: 3 });
+    let m2 = m1.deleteAll([]);
+    expect(m1).toBe(m2);
+  });
+
+  it('uses toString on keys and values', () => {
+    class A extends Record({x: null as number | null}) {
+      toString() {
+        return this.x;
+      }
+    }
+
+    let r = new A({x: 2});
+    let map = SortedMap([[r, r]]);
+    expect(map.toString()).toEqual('SortedMap { 2: 2 }');
+  });
+
+});
