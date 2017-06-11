@@ -1,18 +1,14 @@
 {
-  "name": "immutable",
-  "version": "4.0.0-rc.2",
-  "description": "Immutable Data Collections",
-  "homepage": "https://facebook.github.com/immutable-js",
-  "author": {
-    "name": "Lee Byron",
-    "url": "https://github.com/leebyron"
-  },
+  "name": "immutable-sorted",
+  "version": "0.1.0",
+  "description": "Immutable Sorted Data Collections",
+  "homepage": "https://applitopia.github.io/immutable-sorted",
   "repository": {
     "type": "git",
-    "url": "git://github.com/facebook/immutable-js.git"
+    "url": "git://github.com/applitopia/immutable-sorted.git"
   },
   "bugs": {
-    "url": "https://github.com/facebook/immutable-js/issues"
+    "url": "https://github.com/applitopia/immutable-sorted/issues"
   },
   "main": "dist/immutable.js",
   "typings": "dist/immutable-nonambient.d.ts",
@@ -108,6 +104,7 @@
   ],
   "keywords": [
     "immutable",
+    "sorted",
     "persistent",
     "lazy",
     "data",
@@ -118,5 +115,5 @@
     "sequence",
     "iteration"
   ],
-  "license": "BSD-3-Clause"
+  "license": "(MIT AND BSD-3-Clause)"
 }

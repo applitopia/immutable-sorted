@@ -287,7 +287,7 @@ declare module Immutable {
    * defined according to a comparator function. True for SortedMap and SortedSet.
    *
    * ```js
-   * const { isSorted, Map, SortedMap, OrderedMap, List, Set, SortedSet } = require('immutable');
+   * const { isSorted, Map, SortedMap, OrderedMap, List, Set, SortedSet } = require('immutable-sorted');
    * isSorted([]); // false
    * isSorted({}); // false
    * isSorted(Map()); // false
@@ -1466,7 +1466,7 @@ declare module Immutable {
    * with O(N) space requirements and O(log N) get, set, and delete operations.
    *
    * ```js
-   * > const { SortedMap } = require('immutable');
+   * > const { SortedMap } = require('immutable-sorted');
    *
    * > const map1=SortedMap([['orange','orange'], ['apple','red'], ['banana','yellow']]);
    * SortedMap { "apple": "red", "banana": "yellow", "orange": "orange" }
@@ -1504,7 +1504,7 @@ declare module Immutable {
    *
    * Let's consider the following example with city objects as keys and their co-ordinates as values:
    * ```js
-   * > const { SortedMap, Seq, fromJS } = require('immutable');
+   * > const { SortedMap, Seq, fromJS } = require('immutable-sorted');
    * // Have an array of city objects
    * > const cities=[
    *    [{state: 'MA', city: 'Boston'}, ['42°21′N','71°04′W']],
@@ -1598,7 +1598,7 @@ export module SortedMap {
      * True if the provided value is a SortedMap
      *
      * ```js
-     * > const { SortedMap, SortedSet, List, Map, Set } = require('immutable');
+     * > const { SortedMap, SortedSet, List, Map, Set } = require('immutable-sorted');
      * > SortedMap.isSortedMap(SortedMap());
      * true
      * > SortedMap.isSortedMap(SortedSet());
@@ -1617,7 +1617,7 @@ export module SortedMap {
      * Creates a new SortedMap from alternating keys and values
      *
      * ```js
-     * > const { SortedMap } = require('immutable')
+     * > const { SortedMap } = require('immutable-sorted')
      * > let sortedMap=SortedMap.of('orange','orange', 'apple','red', 'banana','yellow');
      * SortedMap { "apple": "red", "banana": "yellow", "orange": "orange" }
      * ```
@@ -1663,14 +1663,14 @@ export module SortedMap {
    *
    * Create a `SortedMap` from any array of [K,V]:
    * ```js
-   * > const { SortedMap } = require('immutable');
+   * > const { SortedMap } = require('immutable-sorted');
    * > let a=SortedMap([['a','A'], ['c','C'], ['z','Z'], ['u','U'], ['b','B']]);
    * SortedMap { "a": "A", "b": "B", "c": "C", "u": "U", "z": "Z" }
    * ```
    *
    * From a keyed sequence:
    * ```js
-   * > const { SortedMap, SortedSet, List, Map, Seq, Set } = require('immutable');
+   * > const { SortedMap, SortedSet, List, Map, Seq, Set } = require('immutable-sorted');
    *
    * > let seq=Seq({x:'X', c:'B', m:'M', anylabel:'K', f:'F'});
    * Seq { "x": "X", "c": "B", "m": "M", "anylabel": "K", "f": "F" }
@@ -1681,7 +1681,7 @@ export module SortedMap {
    *
    * From other collections (List, Range, Set, Map):
    * ```js
-   * > const { SortedMap, List, Map, Range, Seq, Set } = require('immutable');
+   * > const { SortedMap, List, Map, Range, Seq, Set } = require('immutable-sorted');
    * > let list=List(['orange', 'apple', 'banana']);
    * List [ "orange", "apple", "banana" ]
    * > let c=SortedMap(list.toKeyedSeq());
@@ -1784,7 +1784,7 @@ export module SortedMap {
      * Keeps printing the nodes recursively until `maxDepth` level is reached.
      *
      * ```js
-     * const { SortedMap } = require('immutable')
+     * const { SortedMap } = require('immutable-sorted')
      * const aSortedMap = Range(0, 8).toSortedMap(undefined, {btreeOrder: 4});
      * sortedMap.print();
      *
@@ -2133,7 +2133,7 @@ export module SortedMap {
    * with O(N) space requirements and O(log N) get, add, and delete operations.
    *
    * ```js
-   * > const { SortedSet } = require('immutable');
+   * > const { SortedSet } = require('immutable-sorted');
    *
    * > const set1=SortedSet(['orange', 'apple', 'banana']);
    * SortedSet { "apple", "banana", "orange" }
@@ -2172,7 +2172,7 @@ export module SortedMap {
    *
    * Let's consider the following example with city objects:
    * ```js
-   * > const { SortedSet, Seq, fromJS } = require('immutable');
+   * > const { SortedSet, Seq, fromJS } = require('immutable-sorted');
    * // Have an array of city objects
    * > const cities=[
    *    {state: 'MA', city: 'Boston'},
@@ -2261,7 +2261,7 @@ export module SortedMap {
      * True if the provided value is a `SortedSet`.
      *
      * ```js
-     * > const { SortedMap, SortedSet, List, Map, Set } = require('immutable');
+     * > const { SortedMap, SortedSet, List, Map, Set } = require('immutable-sorted');
      * > SortedSet.isSortedSet(SortedSet());
      * true
      * > SortedSet.isSortedSet(SortedMap());
@@ -2280,7 +2280,7 @@ export module SortedMap {
      * Creates a new `SortedSet` containing `values`.
      *
      * ```js
-     * > const { SortedMap } = require('immutable');
+     * > const { SortedMap } = require('immutable-sorted');
      * > let sortedSet=SortedSet.of("orange", "apple", "banana");
      * SortedSet { "apple", "banana", "orange" }
      * ```
@@ -2292,7 +2292,7 @@ export module SortedMap {
      * the keys from this Collection or JavaScript Object.
      *
      * ```js
-     * > const { SortedMap, Map } = require('immutable');
+     * > const { SortedMap, Map } = require('immutable-sorted');
      *
      * > let map=Map({x:'X', c:'B', m:'M', anylabel:'K', f:'F'});
      * > let sortedSet=SortedSet.fromKeys(map);
@@ -2342,14 +2342,14 @@ export module SortedMap {
    *
    * Create a `SortedSet` from any array:
    * ```js
-   * > const { SortedMap } = require('immutable');
+   * > const { SortedMap } = require('immutable-sorted');
    * > let a=SortedSet(['a', 'c', 'z', 'u', 'b', 'q', 'd']);
    * SortedSet { "a", "b", "c", "d", "q", "u", "z" }
    * ```
    *
    * From a sequence of values:
    * ```js
-   * > const { SortedMap, SortedSet, List, Map, Seq, Set } = require('immutable');
+   * > const { SortedMap, SortedSet, List, Map, Seq, Set } = require('immutable-sorted');
    *
    * > let seq=Seq({x:'X', c:'B', m:'M', anylabel:'K', f:'F'});
    * Seq { "x": "X", "c": "B", "m": "M", "anylabel": "K", "f": "F" }

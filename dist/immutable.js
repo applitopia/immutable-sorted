@@ -28,6 +28,7 @@ var NOT_SET = {};
 // Boolean references, Rough equivalent of `bool &`.
 var CHANGE_LENGTH = { value: false };
 var DID_ALTER = { value: false };
+var DID_MATCH = { value: false };
 
 function MakeRef(ref) {
   ref.value = false;
@@ -36,6 +37,10 @@ function MakeRef(ref) {
 
 function SetRef(ref) {
   ref && (ref.value = true);
+}
+
+function GetRef(ref) {
+  return ref.value;
 }
 
 // A function which returns a value representing an "owner" for transient writes
@@ -143,11 +148,16 @@ function isValueObject(maybeValue) {
     typeof maybeValue.hashCode === 'function');
 }
 
+function isSorted(maybeSorted) {
+  return !!(maybeSorted && maybeSorted[IS_SORTED_SENTINEL]);
+}
+
 var IS_ITERABLE_SENTINEL = '@@__IMMUTABLE_ITERABLE__@@';
 var IS_KEYED_SENTINEL = '@@__IMMUTABLE_KEYED__@@';
 var IS_INDEXED_SENTINEL = '@@__IMMUTABLE_INDEXED__@@';
 var IS_ORDERED_SENTINEL = '@@__IMMUTABLE_ORDERED__@@';
 var IS_RECORD_SENTINEL = '@@__IMMUTABLE_RECORD__@@';
+var IS_SORTED_SENTINEL = '@@__IMMUTABLE_SORTED__@@';
 
 var Collection = function Collection(value) {
   return isCollection(value) ? value : Seq(value);
@@ -1054,7 +1064,7 @@ var ToKeyedSequence = (function (KeyedSeq$$1) {
   ToKeyedSequence.prototype.map = function map (mapper, context) {
     var this$1 = this;
 
-    var mappedSequence = mapFactory(this, mapper, context);
+    var mappedSequence = mapFactory$1(this, mapper, context);
     if (!this._useKeys) {
       mappedSequence.valueSeq = function () { return this$1._iter.toSeq().map(mapper, context); };
     }
@@ -1259,7 +1269,7 @@ function flipFactory(collection) {
   return flipSequence;
 }
 
-function mapFactory(collection, mapper, context) {
+function mapFactory$1(collection, mapper, context) {
   var mappedSequence = makeSequence(collection);
   mappedSequence.size = collection.size;
   mappedSequence.has = function (key) { return collection.has(key); };
@@ -1948,7 +1958,7 @@ var Map = (function (KeyedCollection$$1) {
   function Map(value) {
     return value === null || value === undefined
       ? emptyMap()
-      : isMap(value) && !isOrdered(value)
+      : isMap(value) && !isOrdered(value) && !isSorted()
           ? value
           : emptyMap().withMutations(function (map) {
               var iter = KeyedCollection$$1(value);
@@ -2651,10 +2661,10 @@ function updateMap(map, k, v) {
       didChangeSize,
       didAlter
     );
-    if (!didAlter.value) {
+    if (!GetRef(didAlter)) {
       return map;
     }
-    newSize = map.size + (didChangeSize.value ? v === NOT_SET ? -1 : 1 : 0);
+    newSize = map.size + (GetRef(didChangeSize) ? v === NOT_SET ? -1 : 1 : 0);
   }
   if (map.__ownerID) {
     map.size = newSize;
@@ -3301,7 +3311,7 @@ function updateList(list, index, value) {
     );
   }
 
-  if (!didAlter.value) {
+  if (!GetRef(didAlter)) {
     return list;
   }
 
@@ -3703,6 +3713,2583 @@ function updateOrderedMap(omap, k, v) {
   return makeOrderedMap(newMap, newList);
 }
 
+/**
+ *  Copyright (c) 2014-2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  Original source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+var SortedMapNode = function SortedMapNode(comparator, options, ownerID) {
+  this.comparator = comparator;
+  this.options = options;
+  this.ownerID = ownerID;
+};
+
+SortedMapNode.prototype.getComparator = function getComparator () {};
+SortedMapNode.prototype.get = function get (key, notSetValue) {};
+SortedMapNode.prototype.upsert = function upsert (ownerID, key, value, didChangeSize, didAlter) {};
+SortedMapNode.prototype.remove = function remove (ownerID, key, didChangeSize, didAlter) {};
+SortedMapNode.prototype.fastRemove = function fastRemove (ownerID, key, didChangeSize, didAlter) {};
+SortedMapNode.prototype.iterate = function iterate (fn, reverse) {};
+SortedMapNode.prototype.print = function print (level, maxDepth) {};
+SortedMapNode.prototype.checkConsistency = function checkConsistency (printFlag) {};
+
+var SortedMapPacker = function SortedMapPacker() {};
+SortedMapPacker.prototype.pack = function pack (comparator, options, ownerID, collection) {};
+
+var SortedMapNodeFactory = function SortedMapNodeFactory() {};
+SortedMapNodeFactory.prototype.createNode = function createNode (comparator, options, ownerID, entries, nodes) {};
+SortedMapNodeFactory.prototype.createPacker = function createPacker () {};
+SortedMapNodeFactory.prototype.createIterator = function createIterator (map, type, reverse) {};
+
+/**
+ *  Copyright (c) 2014-2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  Original source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+var DEFAULT_TYPE = 'btree';
+var DEFAULT_BTREE_ORDER = 33;
+
+// #pragma Trie Nodes
+
+var SortedMapBtreeNode = (function (SortedMapNode$$1) {
+  function SortedMapBtreeNode(comparator, options, ownerID, entries, nodes) {
+    SortedMapNode$$1.call(this, comparator, options, ownerID);
+
+    this.entries = entries;
+    this.nodes = nodes;
+
+    this.btreeOrder = options && options.btreeOrder
+      ? options.btreeOrder
+      : DEFAULT_BTREE_ORDER;
+    this.btreeNodeSplitSize = Math.floor((this.btreeOrder - 1) / 2);
+    return this;
+  }
+
+  if ( SortedMapNode$$1 ) SortedMapBtreeNode.__proto__ = SortedMapNode$$1;
+  SortedMapBtreeNode.prototype = Object.create( SortedMapNode$$1 && SortedMapNode$$1.prototype );
+  SortedMapBtreeNode.prototype.constructor = SortedMapBtreeNode;
+
+  SortedMapBtreeNode.prototype.getComparator = function getComparator () {
+    return this.comparator;
+  };
+
+  SortedMapBtreeNode.prototype.get = function get (key, notSetValue) {
+    var entries = this.entries;
+    var didMatch = MakeRef(DID_MATCH);
+    var idx = binarySearch(this.comparator, entries, key, didMatch);
+    if (GetRef(didMatch)) {
+      var value = entries[idx][1];
+      return value === NOT_SET ? notSetValue : value;
+    } else {
+      var nodes = this.nodes;
+      if (nodes) {
+        var value$1 = nodes[idx].get(key, notSetValue);
+        return value$1 === NOT_SET ? notSetValue : value$1;
+      }
+    }
+    return notSetValue;
+  };
+
+  // Returns first key in this subtree
+  SortedMapBtreeNode.prototype.firstKey = function firstKey () {
+    var nodes = this.nodes;
+    if (nodes) {
+      return nodes[0].firstKey();
+    }
+
+    var entries = this.entries;
+    return entries[0][0];
+  };
+
+  // Returns last key in this subtree
+  SortedMapBtreeNode.prototype.lastKey = function lastKey () {
+    var nodes = this.nodes;
+    if (nodes) {
+      return nodes[nodes.length - 1].lastKey();
+    }
+
+    var entries = this.entries;
+    return entries[entries.length - 1][0];
+  };
+
+  //
+  // outKvn is out array with values [[key, value], node] i.e. [entry, node]
+  // which can be consumed or returned by this operation
+  //
+  SortedMapBtreeNode.prototype.upsert = function upsert (ownerID, key, value, didChangeSize, didAlter, outKvn) {
+    if (!outKvn) {
+      // This must be a root case called from SortedMap
+      var subKvn = [];
+
+      var newRoot = this.upsert(
+        ownerID,
+        key,
+        value,
+        didChangeSize,
+        didAlter,
+        subKvn
+      );
+
+      if (subKvn[0]) {
+        // Make a new root node
+        var entries$1 = [subKvn[0]];
+        var nodes$1 = [newRoot, subKvn[1]];
+        newRoot = new SortedMapBtreeNode(
+          this.comparator,
+          this.options,
+          ownerID,
+          entries$1,
+          nodes$1
+        );
+      }
+
+      return newRoot;
+    }
+
+    var entries = this.entries;
+
+    // Search keys
+    var didMatch = MakeRef(DID_MATCH);
+    var idx = binarySearch(this.comparator, entries, key, didMatch);
+    var exists = GetRef(didMatch);
+
+    var nodes = this.nodes;
+    var canEdit = ownerID && ownerID === this.ownerID;
+    var newEntries;
+    var newNodes;
+
+    if (exists) {
+      // Updating entries
+
+      if (entries[idx][1] === value) {
+        //
+        // OPERATION: NONE, same value, no need to update
+        //
+        return this;
+      } else {
+        //
+        // OPERATION: UPDATE entry value in entries
+        //
+        var entry = [key, value];
+
+        SetRef(didAlter);
+        newEntries = setIn$1(entries, idx, entry, canEdit);
+        newNodes = nodes;
+      }
+    } else {
+      // Inserting into entries or upserting nodes
+
+      if (nodes) {
+        //
+        // RECURSIVE: UPSERT node recursively
+        //
+        var subKvn$1 = [];
+
+        var updatedNode = nodes[idx].upsert(
+          ownerID,
+          key,
+          value,
+          didChangeSize,
+          didAlter,
+          subKvn$1
+        );
+
+        if (GetRef(didAlter)) {
+          if (subKvn$1[0]) {
+            //
+            // Insert subKvn into this node
+            //
+            if (entries.length >= this.btreeOrder - 1) {
+              return this.splitNode(
+                idx,
+                updatedNode,
+                subKvn$1,
+                outKvn,
+                ownerID,
+                canEdit
+              );
+            } else {
+              //
+              // Insert subKvn into entries and nodes
+              //
+              newEntries = spliceIn$1(entries, idx, subKvn$1[0], canEdit);
+              newNodes = spliceIn$1(nodes, idx + 1, subKvn$1[1], canEdit);
+              newNodes[idx] = updatedNode;
+            }
+          } else {
+            //
+            // No splitting, just setIn the updated subNode
+            //
+            newEntries = entries;
+            newNodes = setIn$1(nodes, idx, updatedNode, canEdit);
+          }
+        } else {
+          // Nothing changed
+          return this;
+        }
+      } else {
+        // Leaf node
+        // Insert new entry into entries
+        var entry$1 = [key, value];
+
+        SetRef(didAlter);
+        SetRef(didChangeSize);
+
+        if (entries.length >= this.btreeOrder - 1) {
+          return this.splitLeaf(idx, entry$1, outKvn, ownerID, canEdit);
+        } else {
+          //
+          // OPERATION: INSERT new entry into entries
+          //
+          newEntries = spliceIn$1(entries, idx, entry$1, canEdit);
+        }
+      }
+    }
+
+    return this.makeNewNode(newEntries, newNodes, ownerID, canEdit);
+  };
+
+  // this version of remove doesn't do any rebalancing
+  // it just sets the value in an entry to NOT_SET
+  // this method would be preferable when removing large bulk
+  // of entres from mutable SortedMap followed by pack()
+  SortedMapBtreeNode.prototype.fastRemove = function fastRemove (ownerID, key, didChangeSize, didAlter) {
+    var entries = this.entries;
+
+    // Search keys
+    var didMatch = MakeRef(DID_MATCH);
+    var idx = binarySearch(this.comparator, entries, key, didMatch);
+    var exists = GetRef(didMatch);
+
+    var nodes = this.nodes;
+    var canEdit = ownerID && ownerID === this.ownerID;
+    var newEntries;
+    var newNodes;
+
+    if (exists) {
+      // Remove entry from entries
+      if (entries[idx][1] === NOT_SET) {
+        // the entry has been technically deleted already
+        return this;
+      } else {
+        SetRef(didAlter);
+        SetRef(didChangeSize);
+        var newEntry = [key, NOT_SET];
+        newEntries = setIn$1(entries, idx, newEntry, canEdit);
+        newNodes = nodes;
+      }
+    } else {
+      // Remove from node
+
+      if (nodes) {
+        // RECURSIVE: REMOVE from node recursively
+        var updatedNode = nodes[idx].fastRemove(
+          ownerID,
+          key,
+          didChangeSize,
+          didAlter
+        );
+
+        if (GetRef(didAlter)) {
+          //
+          // No splitting, just setIn the updated subNode
+          //
+          newEntries = entries;
+          newNodes = setIn$1(nodes, idx, updatedNode, canEdit);
+        } else {
+          // Nothing changed
+          return this;
+        }
+      } else {
+        // OPERATION: NONE, key to be removed doesn't exist
+        return this;
+      }
+    }
+
+    return this.makeNewNode(newEntries, newNodes, ownerID, canEdit);
+  };
+
+  //
+  // outKvn is an output array with the following format
+  //
+  // [updatedEntry, updatedNode, updatedNodeIsLeft: boolean]
+  //
+  // The returned values can be:
+  // - undefined - means the referenced item didn't change
+  // - NOT_SET - means the referenced node was merged and has to be removed
+  // - any other - the referenced item has to be updated with this value
+  // outKvn[2] is boolean value indicating if node referenced in outKvnp[1]
+  // is left (true) or right (false)
+  //
+  SortedMapBtreeNode.prototype.remove = function remove (ownerID, key, didChangeSize, didAlter, parent, parentIdx, outKvn) {
+    var entries = this.entries;
+
+    // Search keys
+    var didMatch = MakeRef(DID_MATCH);
+    var idx = binarySearch(this.comparator, entries, key, didMatch);
+    var exists = GetRef(didMatch);
+
+    var nodes = this.nodes;
+    var canEdit = ownerID && ownerID === this.ownerID;
+    var newEntries;
+    var newNodes;
+
+    if (exists) {
+      // Remove entry from entries
+      if (nodes) {
+        // OPERATION: MOVE some entries from neighbors or MERGE with a neighbor
+        if (entries[idx][1] === NOT_SET) {
+          // the entry has been technically deleted already
+          return this;
+        } else {
+          // WORKAROUND: so far let's do the workaround and just update
+          // the entry in place with NOT_SET
+          SetRef(didAlter);
+          SetRef(didChangeSize);
+          var newEntry = [key, NOT_SET];
+          newEntries = setIn$1(entries, idx, newEntry, canEdit);
+          newNodes = nodes;
+        }
+      } else {
+        //
+        // OPERATION: REMOVE entry from the LEAF
+        //
+        if (entries[idx][1] === NOT_SET) {
+          // the entry has been technically deleted already
+          return this;
+        } else {
+          SetRef(didAlter);
+          SetRef(didChangeSize);
+          if (entries.length <= this.btreeNodeSplitSize && parent) {
+            // we don't have enough items in this leaf to just remove the entry
+            // we should try borrow an entry from a neighbour or merge this mode with a neighbour
+            // as a workaround we can just update a value in the entry to NOT_SET
+            return this.consolidateLeaf(
+              ownerID,
+              idx,
+              parent,
+              parentIdx,
+              canEdit,
+              outKvn
+            );
+          } else {
+            // it's ok to physically remove from the LEAF and no moves are needed
+            // as the node will meet all the consistency rules
+            newEntries = spliceOut$1(entries, idx, canEdit);
+          }
+        }
+      }
+    } else {
+      // Remove from node
+
+      if (nodes) {
+        // RECURSIVE: REMOVE from node recursively
+        var subKvn = [undefined, undefined, undefined];
+        var updatedNode = nodes[idx].remove(
+          ownerID,
+          key,
+          didChangeSize,
+          didAlter,
+          this,
+          idx,
+          subKvn
+        );
+
+        if (GetRef(didAlter)) {
+          // take care of subKvn
+          return this.spliceNode(
+            ownerID,
+            idx,
+            updatedNode,
+            parent,
+            parentIdx,
+            canEdit,
+            subKvn,
+            outKvn
+          );
+        } else {
+          // Nothing changed
+          return this;
+        }
+      } else {
+        // OPERATION: NONE, key to be removed doesn't exist in this map
+        return this;
+      }
+    }
+
+    return this.makeNewNode(newEntries, newNodes, ownerID, canEdit);
+  };
+
+  SortedMapBtreeNode.prototype.makeNewNode = function makeNewNode (newEntries, newNodes, ownerID, canEdit) {
+    if (newEntries.length === 0) {
+      if (newNodes) {
+        // Root node is turning into a leaf
+        return newNodes[0];
+      } else {
+        // Root node leaf is turning into empty
+        return;
+      }
+    }
+
+    if (canEdit) {
+      this.entries = newEntries;
+      this.nodes = newNodes;
+      return this;
+    }
+    return new SortedMapBtreeNode(
+      this.comparator,
+      this.options,
+      ownerID,
+      newEntries,
+      newNodes
+    );
+  };
+
+  SortedMapBtreeNode.prototype.print = function print (level, maxDepth) {
+    function w(s) {
+      process.stdout.write(s);
+    }
+
+    if (maxDepth && level >= maxDepth) {
+      return;
+    }
+
+    var nodes = this.nodes;
+    var entries = this.entries;
+
+    if (nodes) {
+      for (var i = 0; i < nodes.length; i++) {
+        var node = nodes[i];
+        w(indent(level));
+        if (!node || !(node instanceof SortedMapNode$$1)) {
+          w(
+            '+ CORRUPT NODE[' +
+              i +
+              '] (L' +
+              level +
+              ') ' +
+              JSON.stringify(node) +
+              '\n'
+          );
+        } else {
+          if (node.nodes) {
+            w('+ NODE[' + i + '] (L' + level + ')\n');
+          } else {
+            w('+ LEAF[' + i + '] (L' + level + ')\n');
+          }
+          node.print(level + 1, maxDepth);
+        }
+        if (i < entries.length) {
+          w(indent(level));
+          var entry = entries[i];
+          if (!entry) {
+            w('- CORRUPT ENTRY[' + i + ']: ' + JSON.stringify(entry) + '\n');
+          } else if (entry[1] === NOT_SET) {
+            w('- REMOVED ENTRY[' + i + ']: ' + JSON.stringify(entry[0]) + '\n');
+          } else {
+            w('- ENTRY[' + i + ']: ' + JSON.stringify(entry[0]) + '\n');
+          }
+        }
+      }
+    } else {
+      for (var i$1 = 0; i$1 < entries.length; i$1++) {
+        w(indent(level));
+        var entry$1 = entries[i$1];
+        if (!entry$1) {
+          w('- CORRUPT ENTRY[' + i$1 + ']: ' + JSON.stringify(entry$1) + '\n');
+        } else if (entry$1[1] === NOT_SET) {
+          w('- REMOVED ENTRY[' + i$1 + ']: ' + JSON.stringify(entry$1[0]) + '\n');
+        } else {
+          w('- ENTRY[' + i$1 + ']: ' + JSON.stringify(entry$1[0]) + '\n');
+        }
+      }
+    }
+  };
+
+  SortedMapBtreeNode.prototype.checkConsistency = function checkConsistency (printFlag, level, n, leafLevel) {
+    var this$1 = this;
+
+    function w(f) {
+      if (printFlag) {
+        var s = f();
+        if (s !== undefined) {
+          process.stdout.write(indent(level));
+          process.stdout.write(s);
+        }
+      }
+    }
+
+    if (!level) {
+      level = 0;
+    }
+    if (!n) {
+      n = 0;
+    }
+    if (!leafLevel) {
+      leafLevel = [undefined];
+    }
+
+    if (this.nodes) {
+      w(function () { return '+ Checking NODE[' + n + '] (L' + level + ')\n'; });
+    } else {
+      w(function () { return '+ Checking LEAF[' + n + '] (L' + level + ')\n'; });
+      if (leafLevel[0] === undefined) {
+        leafLevel[0] = level;
+      } else if (leafLevel[0] != level) {
+        failed(112, 'leaves are not on the same level');
+      }
+    }
+
+    function failed(code, msg) {
+      var s = 'Consistency Check Failed with error code ' + code + ': ' + msg;
+      if (printFlag) {
+        w(function () { return s + '\n'; });
+        return code;
+      }
+
+      throw new Error(s);
+    }
+
+    var entries = this.entries;
+    var nodes = this.nodes;
+
+    if (!entries) {
+      return failed(101, 'empty entries in a node');
+    }
+
+    if (!(0 < entries.length && entries.length < this.btreeOrder)) {
+      return failed(
+        102,
+        'entries length is out of range from 0 to (btreeOrder-1)'
+      );
+    }
+
+    if (level > 0 && !(this.btreeNodeSplitSize <= entries.length)) {
+      return failed(103, 'entries length is shorter than btreeNodeSplitSize');
+    }
+
+    if (nodes && !(nodes.length === entries.length + 1)) {
+      return failed(104, 'nodes length out of sync with entries length');
+    }
+
+    var loop = function ( i ) {
+      var entry = entries[i];
+
+      if (!entry) { return { v: failed(105, 'empty entry') }; }
+
+      if (!(typeof entry === 'object' && entry instanceof Array))
+        { return { v: failed(106, 'entry is not Array') }; }
+
+      if (!(entry.length === 2)) { return { v: failed(107, 'entry is not Array[2]') }; }
+
+      if (entry[1] === NOT_SET) {
+        w(
+          function () { return '    - Checking REMOVED ENTRY[' +
+            i +
+            ']: ' +
+            JSON.stringify(entry[0]) +
+            '\n'; }
+        );
+        if (!nodes) {
+          failed(113, 'NOT_SET values are not allowed in leaves');
+        }
+      } else {
+        w(
+          function () { return '    - Checking ENTRY[' +
+            i +
+            ']: ' +
+            JSON.stringify(entry[0]) +
+            '\n'; }
+        );
+      }
+    };
+
+    for (var i = 0; i < entries.length; i++) {
+      var returned = loop( i );
+
+      if ( returned ) return returned.v;
+    }
+
+    // Check if all the keys are sorted
+    for (var i$1 = 0; i$1 < entries.length - 1; i$1++) {
+      if (!(this$1.comparator(entries[i$1][0], entries[i$1 + 1][0]) < 0)) {
+        return failed(108, 'the entries are not sorted');
+      }
+    }
+
+    if (nodes)
+      { for (var i$2 = 0; i$2 < nodes.length; i$2++) {
+        var node = nodes[i$2];
+
+        if (!node || !(node instanceof SortedMapNode$$1))
+          { return failed(109, 'empty or corrupt node'); }
+
+        // Check the node recursively
+        var code = node.checkConsistency(printFlag, level + 1, i$2, leafLevel);
+
+        if (code !== 0) {
+          return code;
+        }
+
+        if (
+          i$2 > 0 && !(this$1.comparator(entries[i$2 - 1][0], node.firstKey()) < 0)
+        ) {
+          return failed(110, 'the entry and right node not sorted');
+        }
+
+        if (
+          i$2 < entries.length &&
+          !(this$1.comparator(node.lastKey(), entries[i$2][0]) < 0)
+        ) {
+          return failed(111, 'the entry and left node not sorted');
+        }
+      } }
+
+    return 0;
+  };
+
+  return SortedMapBtreeNode;
+}(SortedMapNode)); // class
+
+// #pragma Iterators
+
+SortedMapBtreeNode.prototype.iterate = function(fn, reverse) {
+  var entries = this.entries;
+  var nodes = this.nodes;
+
+  if (nodes) {
+    for (var ii = 0, maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
+      var node = nodes[reverse ? maxIndex + 1 - ii : ii];
+      if (node.iterate(fn, reverse) === false) {
+        return false;
+      }
+      var entry = entries[reverse ? maxIndex - ii : ii];
+      if (entry[1] === NOT_SET) {
+        continue;
+      }
+      if (fn(entry) === false) {
+        return false;
+      }
+    }
+
+    // Iterate through the remaining last node
+    var node$1 = nodes[reverse ? 0 : nodes.length - 1];
+    if (node$1.iterate(fn, reverse) === false) {
+      return false;
+    }
+  } else {
+    for (var ii$1 = 0, maxIndex$1 = entries.length - 1; ii$1 <= maxIndex$1; ii$1++) {
+      var entry$1 = entries[reverse ? maxIndex$1 - ii$1 : ii$1];
+      if (entry$1[1] === NOT_SET) {
+        continue;
+      }
+      if (fn(entry$1) === false) {
+        return false;
+      }
+    }
+  }
+};
+
+var SortedMapBtreeNodeIterator = (function (Iterator$$1) {
+  function SortedMapBtreeNodeIterator(map, type, reverse) {
+    this._type = type;
+    this._reverse = reverse;
+    this._stack = map._root && mapIteratorFrame$1(map._root);
+  }
+
+  if ( Iterator$$1 ) SortedMapBtreeNodeIterator.__proto__ = Iterator$$1;
+  SortedMapBtreeNodeIterator.prototype = Object.create( Iterator$$1 && Iterator$$1.prototype );
+  SortedMapBtreeNodeIterator.prototype.constructor = SortedMapBtreeNodeIterator;
+
+  SortedMapBtreeNodeIterator.prototype.next = function next () {
+    var this$1 = this;
+
+    var type = this._type;
+    var stack = this._stack;
+    while (stack) {
+      var node = stack.node;
+      var index = stack.index++;
+      if (node.nodes) {
+        var maxIndex = node.entries.length + node.nodes.length - 1;
+        if (index <= maxIndex) {
+          if (index % 2 === 0) {
+            index /= 2;
+            var subNode = node.nodes[
+              this$1._reverse ? node.nodes.length - 1 - index : index
+            ];
+            if (subNode) {
+              stack = (this$1._stack = mapIteratorFrame$1(subNode, stack));
+            }
+            continue;
+          } else {
+            index = (index - 1) / 2;
+            var entry = node.entries[
+              this$1._reverse ? node.entries.length - 1 - index : index
+            ];
+            if (entry[1] === NOT_SET) {
+              continue;
+            }
+            return mapIteratorValue$1(type, entry);
+          }
+        }
+      } else {
+        // node.entries
+        var maxIndex$1 = node.entries.length - 1;
+        if (index <= maxIndex$1) {
+          var entry$1 = node.entries[this$1._reverse ? maxIndex$1 - index : index];
+          if (entry$1[1] === NOT_SET) {
+            continue;
+          }
+          return mapIteratorValue$1(type, entry$1);
+        }
+      }
+      stack = (this$1._stack = this$1._stack.__prev);
+    }
+    return iteratorDone();
+  };
+
+  return SortedMapBtreeNodeIterator;
+}(Iterator));
+
+function mapIteratorValue$1(type, entry) {
+  return iteratorValue(type, entry[0], entry[1]);
+}
+
+function mapIteratorFrame$1(node, prev) {
+  return {
+    node: node,
+    index: 0,
+    __prev: prev
+  };
+}
+
+//
+// Array manipulation algorithms
+//
+
+function allocArray(n) {
+  var a = new Array(n);
+  return a;
+}
+
+var _indentStr = new Array(120).join(' ');
+
+function indent(level) {
+  var indentCnt = 4 * level;
+  if (indentCnt > _indentStr.length) {
+    indentCnt = _indentStr.length;
+  }
+  return _indentStr.substring(0, indentCnt);
+}
+
+function setIn$1(array, idx, val, canEdit) {
+  if (canEdit) {
+    array[idx] = val;
+    return array;
+  }
+
+  var newLen = array.length;
+  var newArray = allocArray(newLen);
+  for (var ii = 0; ii < idx; ii++) {
+    newArray[ii] = array[ii];
+  }
+  newArray[idx] = val;
+  for (var ii$1 = idx + 1; ii$1 < newLen; ii$1++) {
+    newArray[ii$1] = array[ii$1];
+  }
+  return newArray;
+}
+
+function spliceIn$1(array, idx, val, canEdit) {
+  var newLen = array.length + 1;
+
+  if (canEdit) {
+    // Have to shift items going backwards
+    for (var ii = newLen - 1, stop = idx + 1; ii >= stop; ii--) {
+      array[ii] = array[ii - 1];
+    }
+    array[idx] = val;
+    return array;
+  }
+
+  var newArray = allocArray(newLen);
+  for (var ii$1 = 0; ii$1 < idx; ii$1++) {
+    newArray[ii$1] = array[ii$1];
+  }
+  newArray[idx] = val;
+  for (var ii$2 = idx + 1; ii$2 < newLen; ii$2++) {
+    newArray[ii$2] = array[ii$2 - 1];
+  }
+  return newArray;
+}
+
+function spliceOut$1(array, idx, canEdit) {
+  var newLen = array.length - 1;
+
+  if (canEdit) {
+    for (var ii = idx; ii < newLen; ii++) {
+      array[ii] = array[ii + 1];
+    }
+    array.length = newLen;
+    return array;
+  }
+
+  var newArray = allocArray(newLen);
+  for (var ii$1 = 0; ii$1 < idx; ii$1++) {
+    newArray[ii$1] = array[ii$1];
+  }
+  for (var ii$2 = idx; ii$2 < newLen; ii$2++) {
+    newArray[ii$2] = array[ii$2 + 1];
+  }
+  return newArray;
+}
+
+function spliceOutN(array, idx, n, canEdit) {
+  var newLen = array.length - n;
+
+  if (canEdit) {
+    for (var ii = idx; ii < newLen; ii++) {
+      array[ii] = array[ii + n];
+    }
+    array.length = newLen;
+    return array;
+  }
+
+  var newArray = allocArray(newLen);
+  for (var ii$1 = 0; ii$1 < idx; ii$1++) {
+    newArray[ii$1] = array[ii$1];
+  }
+  for (var ii$2 = idx; ii$2 < newLen; ii$2++) {
+    newArray[ii$2] = array[ii$2 + n];
+  }
+  return newArray;
+}
+
+//
+// Example: spliceOutShiftRightN(['a', 'b', 'c', 'd', 'e', 'f', 'g'], 3, 2, canEdit)
+//
+// removes item at index=3 ('d') and moves all remaining items in an awway right by 2 positions
+//
+// Result: [?, ?, 'a', 'b', 'c', 'f', 'g']
+//
+function spliceOutShiftRightN(array, idx, rightN, canEdit) {
+  var newLen = array.length - 1 + rightN;
+  var newArray;
+
+  if (canEdit) {
+    array.length = newLen;
+    newArray = array;
+  } else {
+    newArray = allocArray(newLen);
+  }
+
+  for (var ii = newLen - 1, stop = idx + rightN; ii >= stop; ii--) {
+    newArray[ii] = array[ii - rightN + 1];
+  }
+  for (var ii$1 = idx + rightN - 1; ii$1 >= rightN; ii$1--) {
+    newArray[ii$1] = array[ii$1 - rightN];
+  }
+  return newArray;
+}
+
+//
+// First: setIn(array, setInIdx, setInValue)
+// Then: spliceOut(array, spliceOutIdx)
+// Optimized, eliminating redundant copying
+// Equivalent of setInSpliceOutN(array, setInIdx, setInValue, spliceOutIdx, 1, canEdit)
+//
+// Example: setInSpliceOut(['a', 'b', 'c', 'd', 'e', 'f', 'g'], 3, 'D', 1, canEdit)
+//
+// Result: ['a', 'c', 'D', 'f', 'g']
+//
+function setInSpliceOut(array, setInIdx, setInValue, spliceOutIdx, canEdit) {
+  var newArray = spliceOut$1(array, spliceOutIdx, canEdit);
+
+  // Now we can edit regardless of canEdit
+  if (setInIdx < spliceOutIdx) {
+    newArray[setInIdx] = setInValue;
+  } else if (setInIdx > spliceOutIdx) {
+    newArray[setInIdx - 1] = setInValue;
+  }
+
+  return newArray;
+}
+
+function binarySearch(comparator, entries, key, didMatch) {
+  var first = 0;
+  var range = entries.length;
+
+  while (range > 0) {
+    var half = Math.floor(range / 2);
+    var entry = entries[first + half];
+    var entryKey = entry[0];
+    var cmp = comparator(key, entryKey);
+    if (cmp == 0) {
+      SetRef(didMatch);
+      return first + half;
+    }
+    if (cmp > 0) {
+      first += half + 1;
+      range -= half + 1;
+    } else {
+      range = half;
+    }
+  }
+  return first;
+}
+
+//
+// Node Split algorithms
+//
+SortedMapBtreeNode.prototype.splitNode = function(
+  idx,
+  updatedNode,
+  subKvn,
+  outKvn,
+  ownerID,
+  canEdit
+) {
+  var entries = this.entries;
+  var nodes = this.nodes;
+  var medianIdx = this.btreeNodeSplitSize;
+
+  var newEntries;
+  var newNodes;
+
+  if (idx < medianIdx) {
+    var rightEntries = entries.slice(medianIdx, entries.length);
+    var rightNodes = nodes.slice(medianIdx, nodes.length);
+    var rightNode = new SortedMapBtreeNode(
+      this.comparator,
+      this.options,
+      this.ownerID,
+      rightEntries,
+      rightNodes
+    );
+
+    outKvn[0] = entries[medianIdx - 1];
+    outKvn[1] = rightNode;
+
+    if (canEdit) {
+      // truncate existing entries and nodes
+      entries.length = medianIdx;
+      nodes.length = medianIdx + 1;
+
+      // shift the items right to make room for returned Kvn
+      // and updatedNode (has to go backwards)
+      for (var i = medianIdx - 1; i >= idx + 1; i--) {
+        entries[i] = entries[i - 1];
+        nodes[i + 1] = nodes[i];
+      }
+
+      // place returned Kvn and updated node into entries and nodes
+      entries[idx] = subKvn[0];
+      nodes[idx] = updatedNode;
+      nodes[idx + 1] = subKvn[1];
+      newEntries = entries;
+      newNodes = nodes;
+    } else {
+      // allocate new arrays for entries and nodes
+      newEntries = allocArray(medianIdx);
+      newNodes = allocArray(medianIdx + 1);
+
+      // copy the items before idx into new arrays
+      for (var i$1 = 0; i$1 < idx; i$1++) {
+        newEntries[i$1] = entries[i$1];
+        newNodes[i$1] = nodes[i$1];
+      }
+
+      // place returned Kvn and updated node into new arrays
+      newEntries[idx] = subKvn[0];
+      newNodes[idx] = updatedNode;
+      newNodes[idx + 1] = subKvn[1];
+
+      // copy remaining items after idx into new arrays
+      for (var i$2 = idx + 1; i$2 < medianIdx; i$2++) {
+        newEntries[i$2] = entries[i$2 - 1];
+        newNodes[i$2 + 1] = nodes[i$2];
+      }
+    }
+  } else if (idx === medianIdx) {
+    // allocate the arrays for right node
+    var rightEntries$1 = allocArray(entries.length - medianIdx);
+    var rightNodes$1 = allocArray(nodes.length - medianIdx);
+
+    // place subKvn to the beginning of right node arrays
+    rightEntries$1[0] = entries[medianIdx];
+    rightNodes$1[0] = subKvn[1];
+
+    // copy the remaining items into the right node arrays
+    for (var i$3 = 1, len = rightEntries$1.length; i$3 < len; i$3++) {
+      rightEntries$1[i$3] = entries[medianIdx + i$3];
+      rightNodes$1[i$3] = nodes[medianIdx + i$3];
+    }
+    // copy the last node item into rightNodes
+    rightNodes$1[rightNodes$1.length - 1] = nodes[nodes.length - 1];
+
+    var rightNode$1 = new SortedMapBtreeNode(
+      this.comparator,
+      this.options,
+      this.ownerID,
+      rightEntries$1,
+      rightNodes$1
+    );
+
+    outKvn[0] = subKvn[0];
+    outKvn[1] = rightNode$1;
+
+    if (canEdit) {
+      // truncate existing entries and nodes
+      entries.length = medianIdx;
+      nodes.length = medianIdx + 1;
+      nodes[idx] = updatedNode;
+      newEntries = entries;
+      newNodes = nodes;
+    } else {
+      // allocate new arrays for entries and nodes
+      newEntries = allocArray(medianIdx);
+      newNodes = allocArray(medianIdx + 1);
+
+      // copy the items before idx into new arrays
+      for (var i$4 = 0; i$4 < medianIdx; i$4++) {
+        newEntries[i$4] = entries[i$4];
+        newNodes[i$4] = nodes[i$4];
+      }
+
+      // place returned Kvn and updated node into new node arrays
+      newNodes[idx] = updatedNode;
+    }
+  } else {
+    // idx > medianIdx
+
+    // allocate the arrays for right node
+    var rightEntries$2 = allocArray(entries.length - medianIdx);
+    var rightNodes$2 = allocArray(nodes.length - medianIdx);
+
+    // copy the items into the beginning of right node arrays
+    var idx0 = medianIdx + 1;
+    var rightIdx = idx - idx0;
+    for (var i$5 = 0, len$1 = rightIdx; i$5 < len$1; i$5++) {
+      rightEntries$2[i$5] = entries[idx0 + i$5];
+      rightNodes$2[i$5] = nodes[idx0 + i$5];
+    }
+
+    // place subKvn to the middle right node arrays
+    rightEntries$2[rightIdx] = subKvn[0];
+    rightNodes$2[rightIdx] = updatedNode;
+    rightNodes$2[rightIdx + 1] = subKvn[1];
+
+    // copy the remaining items into the right node arrays
+    for (var i$6 = rightIdx + 1, len$2 = rightEntries$2.length; i$6 < len$2; i$6++) {
+      rightEntries$2[i$6] = entries[medianIdx + i$6];
+      rightNodes$2[i$6 + 1] = nodes[medianIdx + i$6 + 1];
+    }
+
+    var rightNode$2 = new SortedMapBtreeNode(
+      this.comparator,
+      this.options,
+      this.ownerID,
+      rightEntries$2,
+      rightNodes$2
+    );
+
+    outKvn[0] = entries[medianIdx];
+    outKvn[1] = rightNode$2;
+
+    if (canEdit) {
+      // truncate existing entries and nodes
+      entries.length = medianIdx;
+      nodes.length = medianIdx + 1;
+      newEntries = entries;
+      newNodes = nodes;
+    } else {
+      // allocate new arrays for entries and nodes
+      newEntries = entries.slice(0, medianIdx);
+      newNodes = nodes.slice(0, medianIdx + 1);
+    }
+  }
+
+  return this.makeNewNode(newEntries, newNodes, ownerID, canEdit);
+};
+
+SortedMapBtreeNode.prototype.splitLeaf = function(
+  idx,
+  entry,
+  outKvn,
+  ownerID,
+  canEdit
+) {
+  var entries = this.entries;
+  var nodes = this.nodes;
+  var medianIdx = this.btreeNodeSplitSize;
+
+  var newEntries;
+  var newNodes;
+
+  if (idx < medianIdx) {
+    var rightEntries = entries.slice(medianIdx, entries.length);
+    var rightNode = new SortedMapBtreeNode(
+      this.comparator,
+      this.options,
+      this.ownerID,
+      rightEntries
+    );
+
+    outKvn[0] = entries[medianIdx - 1];
+    outKvn[1] = rightNode;
+
+    if (canEdit) {
+      // truncate existing entries and nodes
+      entries.length = medianIdx;
+
+      // shift the items right to make room for returned Kvn
+      // and updatedNode (has to go backwards)
+      for (var i = medianIdx - 1; i >= idx + 1; i--) {
+        entries[i] = entries[i - 1];
+      }
+
+      // place returned Kvn and updated node into entries and nodes
+      entries[idx] = entry;
+      newEntries = entries;
+    } else {
+      // allocate new arrays for entries and nodes
+      newEntries = allocArray(medianIdx);
+
+      // copy the items before idx into new arrays
+      for (var i$1 = 0; i$1 < idx; i$1++) {
+        newEntries[i$1] = entries[i$1];
+      }
+
+      // place returned Kvn and updated node into new arrays
+      newEntries[idx] = entry;
+
+      // copy remaining items after idx into new arrays
+      for (var i$2 = idx + 1; i$2 < medianIdx; i$2++) {
+        newEntries[i$2] = entries[i$2 - 1];
+      }
+    }
+  } else if (idx === medianIdx) {
+    // allocate the arrays for right node
+    var rightEntries$1 = allocArray(entries.length - medianIdx);
+
+    // place subKvn to the beginning of right node arrays
+    rightEntries$1[0] = entries[medianIdx];
+
+    // copy the remaining items into the right node arrays
+    for (var i$3 = 1, len = rightEntries$1.length; i$3 < len; i$3++) {
+      rightEntries$1[i$3] = entries[medianIdx + i$3];
+    }
+
+    var rightNode$1 = new SortedMapBtreeNode(
+      this.comparator,
+      this.options,
+      this.ownerID,
+      rightEntries$1
+    );
+
+    outKvn[0] = entry;
+    outKvn[1] = rightNode$1;
+
+    if (canEdit) {
+      // truncate existing entries and nodes
+      entries.length = medianIdx;
+      newEntries = entries;
+    } else {
+      // allocate new arrays for entries
+      newEntries = allocArray(medianIdx);
+
+      // copy the items before idx into new arrays
+      for (var i$4 = 0; i$4 < medianIdx; i$4++) {
+        newEntries[i$4] = entries[i$4];
+      }
+    }
+  } else {
+    // idx > medianIdx
+
+    // allocate the arrays for right node
+    var rightEntries$2 = allocArray(entries.length - medianIdx);
+
+    // copy the items into the beginning of right node arrays
+    var idx0 = medianIdx + 1;
+    var rightIdx = idx - idx0;
+    for (var i$5 = 0, len$1 = rightIdx; i$5 < len$1; i$5++) {
+      rightEntries$2[i$5] = entries[idx0 + i$5];
+    }
+
+    // place subKvn to the middle right node arrays
+    rightEntries$2[rightIdx] = entry;
+
+    // copy the remaining items into the right node arrays
+    for (var i$6 = rightIdx + 1, len$2 = rightEntries$2.length; i$6 < len$2; i$6++) {
+      rightEntries$2[i$6] = entries[medianIdx + i$6];
+    }
+
+    var rightNode$2 = new SortedMapBtreeNode(
+      this.comparator,
+      this.options,
+      this.ownerID,
+      rightEntries$2
+    );
+
+    outKvn[0] = entries[medianIdx];
+    outKvn[1] = rightNode$2;
+
+    if (canEdit) {
+      // truncate existing entries and nodes
+      entries.length = medianIdx;
+      newEntries = entries;
+    } else {
+      // allocate new arrays for entries and nodes
+      newEntries = entries.slice(0, medianIdx);
+    }
+  }
+
+  return this.makeNewNode(newEntries, newNodes, ownerID, canEdit);
+};
+
+SortedMapBtreeNode.prototype.spliceNode = function(
+  ownerID,
+  idx,
+  updatedNode,
+  parent,
+  parentIdx,
+  canEdit,
+  subKvn,
+  outKvn
+) {
+  var entries = this.entries;
+  var nodes = this.nodes;
+
+  var newEntries;
+  var newNodes;
+
+  var updatedEntry = subKvn[0];
+  var updatedNeighbor = subKvn[1];
+  var updatedNeighborIsLeft = subKvn[2];
+
+  if (updatedNeighbor === NOT_SET) {
+    //
+    // Removing entry and node
+    //
+    if (entries.length <= this.btreeNodeSplitSize && parent) {
+      // Not enough room, consolidate this node
+      if (updatedNeighborIsLeft) {
+        // remove left node in newNodes
+        return this.consolidateNode(
+          ownerID,
+          idx,
+          updatedNode,
+          idx - 1,
+          idx - 1,
+          parent,
+          parentIdx,
+          canEdit,
+          outKvn
+        );
+      } else {
+        // remove right node in newNodes
+        return this.consolidateNode(
+          ownerID,
+          idx,
+          updatedNode,
+          idx,
+          idx + 1,
+          parent,
+          parentIdx,
+          canEdit,
+          outKvn
+        );
+      }
+    } else {
+      if (updatedNeighborIsLeft) {
+        // update left node in newNodes
+        newNodes = setInSpliceOut(nodes, idx, updatedNode, idx - 1, canEdit);
+        newEntries = spliceOut$1(entries, idx - 1, canEdit);
+      } else {
+        // update right node in newNodes
+        newNodes = setInSpliceOut(nodes, idx, updatedNode, idx + 1, canEdit);
+        newEntries = spliceOut$1(entries, idx, canEdit);
+      }
+    }
+  } else {
+    //
+    // Updating entry and node
+    //
+    newNodes = setIn$1(nodes, idx, updatedNode, canEdit);
+    if (updatedNeighbor) {
+      if (updatedNeighborIsLeft) {
+        // update left node in newNodes
+        newNodes[idx - 1] = updatedNeighbor;
+        newEntries = setIn$1(entries, idx - 1, updatedEntry, canEdit);
+      } else {
+        // update right node in newNodes
+        newNodes[idx + 1] = updatedNeighbor;
+        newEntries = setIn$1(entries, idx, updatedEntry, canEdit);
+      }
+    } else if (updatedEntry) {
+      newEntries = setIn$1(entries, idx, updatedEntry, canEdit);
+    } else {
+      newEntries = entries;
+    }
+  }
+
+  return this.makeNewNode(newEntries, newNodes, ownerID, canEdit);
+};
+
+//
+// We updating node at position idx, removing the entry at position removeEntryIdx,
+// and removing a neighbor node at position removeNodeIdx
+// (either on the left or right side of updated node). We know that we already have
+// a minimum number of allowed entries in the node, so we have to either
+// move some entries from a neighbor or merge with neighbour
+//
+SortedMapBtreeNode.prototype.consolidateNode = function(
+  ownerID,
+  idx,
+  updatedNode,
+  removeEntryIdx,
+  removeNodeIdx,
+  parent,
+  parentIdx,
+  canEdit,
+  outKvn
+) {
+  var entries = this.entries;
+  var nodes = this.nodes;
+
+  var parentEntries = parent.entries;
+  var parentNodes = parent.nodes;
+
+  //
+  // Decide if we are going to move entries or merge
+  // and with which neighbor we are going to proceed
+  //
+  var donorNode;
+  var mergeNode;
+  var leftNode;
+  var rightNode;
+  if (parentIdx === 0) {
+    // Only right node can be a host within a scope of this parent
+    rightNode = parentNodes[parentIdx + 1];
+    mergeNode = (donorNode = rightNode);
+  } else if (parentIdx === parentNodes.length - 1) {
+    // Only left node can be a host within a scope of this parent
+    leftNode = parentNodes[parentIdx - 1];
+    mergeNode = (donorNode = leftNode);
+  } else {
+    // Both left and right node could be a potential donor
+    leftNode = parentNodes[parentIdx - 1];
+    rightNode = parentNodes[parentIdx + 1];
+    var leftAvail = (leftNode.entries.length - this.btreeNodeSplitSize + 1) /
+      2;
+    var rightAvail = (rightNode.entries.length -
+      this.btreeNodeSplitSize +
+      1) /
+      2;
+    if (leftAvail >= rightAvail) {
+      donorNode = leftNode;
+      mergeNode = rightNode;
+    } else {
+      donorNode = rightNode;
+      mergeNode = leftNode;
+    }
+  }
+
+  var newEntries;
+  var newNodes;
+
+  //
+  // Move from the LEFT node
+  //
+  function moveFromLeftNode(node, n, merge) {
+    // allocate newEntries extended by n
+    newEntries = spliceOutShiftRightN(entries, removeEntryIdx, n, canEdit);
+    newNodes = spliceOutShiftRightN(nodes, removeNodeIdx, n, canEdit);
+
+    // now set the updatedNode, adjust the index according to the shift above
+    var uIdx = idx < removeNodeIdx ? idx + n : idx + n - 1;
+    newNodes[uIdx] = updatedNode;
+
+    // Then move an item from the parent node into newEntries
+    var i = n - 1;
+    newEntries[i] = parentEntries[parentIdx - 1];
+
+    // And move rightest node from the neighbor into newNodes
+    newNodes[i--] = node.nodes[node.nodes.length - 1];
+
+    // Then copy the items from the node
+    var j;
+    for (j = node.entries.length - 1; i >= 0; i--, j--) {
+      newEntries[i] = node.entries[j];
+      newNodes[i] = node.nodes[j];
+    }
+
+    if (merge) {
+      outKvn[1] = NOT_SET;
+    } else {
+      // Last, copy the remaining entry from node to parent
+      outKvn[0] = node.entries[j];
+
+      // Make a copy of donor's node without donated entries
+      var newNodeEntries = spliceOutN(
+        node.entries,
+        node.entries.length - n,
+        n,
+        canEdit
+      );
+      var newNodeNodes = spliceOutN(
+        node.nodes,
+        node.nodes.length - n,
+        n,
+        canEdit
+      );
+
+      outKvn[1] = node.makeNewNode(
+        newNodeEntries,
+        newNodeNodes,
+        ownerID,
+        canEdit
+      );
+    }
+    outKvn[2] = true;
+  }
+
+  //
+  // Move from the right node
+  //
+  function moveFromRightNode(node, n, merge) {
+    newEntries = spliceOut$1(entries, removeEntryIdx, canEdit);
+    newNodes = spliceOut$1(nodes, removeNodeIdx, canEdit);
+
+    // Expand new entries
+    var j = newEntries.length;
+    newEntries.length = newEntries.length + n;
+    newNodes.length = newNodes.length + n;
+
+    // now set the updatedNode, adjust the index according to the shift above
+    var uIdx = idx < removeNodeIdx ? idx : idx - 1;
+    newNodes[uIdx] = updatedNode;
+
+    // Then move an item from the parent node into newEntries
+    newEntries[j++] = parentEntries[parentIdx];
+
+    // Also copy the first item in right neighbor into newNodes
+    newNodes[j] = node.nodes[0];
+
+    // Then copy the items from the node
+    for (var i = 0, iLimit = n - 1; i < iLimit; i++) {
+      newEntries[j + i] = node.entries[i];
+      newNodes[j + i + 1] = node.nodes[i + 1];
+    }
+
+    if (merge) {
+      outKvn[1] = NOT_SET;
+    } else {
+      // Last, copy the remaining item from node to parent
+      outKvn[0] = node.entries[n - 1];
+
+      // Make a copy of donor's node without donated entries
+      var newNodeEntries = spliceOutN(node.entries, 0, n, canEdit);
+      var newNodeNodes = spliceOutN(node.nodes, 0, n, canEdit);
+
+      outKvn[1] = node.makeNewNode(
+        newNodeEntries,
+        newNodeNodes,
+        ownerID,
+        canEdit
+      );
+    }
+    outKvn[2] = false;
+  }
+
+  var donorAvail = Math.floor(
+    (donorNode.entries.length - this.btreeNodeSplitSize + 1) / 2
+  );
+  if (donorAvail > 0) {
+    //
+    // OPERATION: MOVE
+    //
+    // move donorAvail entries from donorNode to this leaf through parentNodes
+    if (donorNode === leftNode) {
+      moveFromLeftNode(donorNode, donorAvail);
+    } else {
+      moveFromRightNode(donorNode, donorAvail);
+    }
+  } else {
+    //
+    // OPERATION: MERGE
+    //
+    // neither neighbour has enough entries to donate
+    // we gotta merge this node with mergeNode which has fewer entries available
+    if (mergeNode === leftNode) {
+      // Merge with the left node
+      moveFromLeftNode(mergeNode, mergeNode.entries.length + 1, true);
+    } else {
+      // Merge with the right node
+      moveFromRightNode(mergeNode, mergeNode.entries.length + 1, true);
+    }
+  }
+
+  return this.makeNewNode(newEntries, newNodes, ownerID, canEdit);
+};
+
+// We are eliminating the entry at position idx and we know that we already
+// have a minimum number of allowed entries in the node, so we have to either
+// move some entries from a neighbor or merge with neighbour
+SortedMapBtreeNode.prototype.consolidateLeaf = function(
+  ownerID,
+  idx,
+  parent,
+  parentIdx,
+  canEdit,
+  outKvn
+) {
+  var entries = this.entries;
+  var parentEntries = parent.entries;
+  var parentNodes = parent.nodes;
+
+  //
+  // Decide if we are going to move entries or merge
+  // and with which neighbor we are going to proceed
+  //
+  var donorNode;
+  var mergeNode;
+  var leftNode;
+  var rightNode;
+  if (parentIdx === 0) {
+    // Only right node can be a host within a scope of this parent
+    rightNode = parentNodes[parentIdx + 1];
+    mergeNode = (donorNode = rightNode);
+  } else if (parentIdx === parentNodes.length - 1) {
+    // Only left node can be a host within a scope of this parent
+    leftNode = parentNodes[parentIdx - 1];
+    mergeNode = (donorNode = leftNode);
+  } else {
+    // Both left and right node could be a potential donor
+    leftNode = parentNodes[parentIdx - 1];
+    rightNode = parentNodes[parentIdx + 1];
+    var leftAvail = leftNode.entries.length - this.btreeNodeSplitSize;
+    var rightAvail = rightNode.entries.length - this.btreeNodeSplitSize;
+    if (leftAvail >= rightAvail) {
+      donorNode = leftNode;
+    } else {
+      donorNode = rightNode;
+    }
+  }
+
+  var newEntries;
+  //
+  // Move from the LEFT node
+  //
+  // n - is the number of entries added to the target node
+  //
+  function moveFromLeftNode(node, n, merge) {
+    // allocate newEntries extended by n
+    newEntries = spliceOutShiftRightN(entries, idx, n, canEdit);
+
+    // m is number of entries to be moved from donor node
+    var m = n;
+    if (!parentNotSet) {
+      // Move an item from the parent node into newEntries
+      newEntries[n - 1] = parentEntry;
+      m--;
+    }
+
+    // Then copy the items from the node
+    for (var i = 0; i < m; i++) {
+      newEntries[i] = node.entries[node.entries.length - m + i];
+    }
+
+    if (merge) {
+      outKvn[1] = NOT_SET;
+    } else {
+      // Last, copy the remaining item from node to parent
+      m++;
+      outKvn[0] = node.entries[node.entries.length - m];
+
+      // Make a copy of donor's node without donated entries
+      var newNodeEntries = spliceOutN(
+        node.entries,
+        node.entries.length - m,
+        m,
+        canEdit
+      );
+
+      outKvn[1] = node.makeNewNode(newNodeEntries, undefined, ownerID, canEdit);
+    }
+    outKvn[2] = true;
+  }
+
+  //
+  // Move from the right node
+  //
+  // n - is the number of entries added to the target node
+  //
+  function moveFromRightNode(node, n, merge) {
+    newEntries = spliceOut$1(entries, idx, canEdit);
+    // Expand new entries
+    var j = newEntries.length;
+    newEntries.length = newEntries.length + n;
+
+    // m is number of entries to be moved from donor node
+    var m = n;
+    if (!parentNotSet) {
+      // Move an item from the parent node into newEntries
+      newEntries[j++] = parentEntry;
+      m--;
+    }
+
+    // Then copy the items from the node
+    for (var i = 0; i < m; i++) {
+      newEntries[j + i] = node.entries[i];
+    }
+
+    if (merge) {
+      outKvn[1] = NOT_SET;
+    } else {
+      // Last, copy the remaining item from node to parent
+      outKvn[0] = node.entries[m++];
+
+      // Make a copy of donor's node without donated entries
+      var newNodeEntries = spliceOutN(node.entries, 0, m, canEdit);
+
+      outKvn[1] = node.makeNewNode(newNodeEntries, undefined, ownerID, canEdit);
+    }
+    outKvn[2] = false;
+  }
+
+  var parentEntry = donorNode === leftNode
+    ? parentEntries[parentIdx - 1]
+    : parentEntries[parentIdx];
+  var parentNotSet = parentEntry[1] === NOT_SET ? true : false;
+  var parentAdj = parentNotSet ? 1 : 0;
+  var donorAvail = donorNode.entries.length -
+    this.btreeNodeSplitSize -
+    parentAdj;
+  if (donorAvail > 0) {
+    //
+    // OPERATION: MOVE
+    //
+    // move donorAvail entries from donorNode to this leaf through parentNodes
+    var n = Math.floor((donorAvail + 1) / 2);
+    if (donorNode === leftNode) {
+      moveFromLeftNode(donorNode, n);
+    } else {
+      moveFromRightNode(donorNode, n);
+    }
+  } else {
+    //
+    // OPERATION: MERGE
+    //
+    // neither neighbour has enough entries to donate
+    // we gotta merge this node with donorNode
+    var n$1 = donorNode.entries.length + 1 - parentAdj;
+    if (donorNode === leftNode) {
+      // Merge with the left node
+      moveFromLeftNode(donorNode, n$1, true);
+    } else {
+      // Merge with the right node
+      moveFromRightNode(donorNode, n$1, true);
+    }
+  }
+
+  return this.makeNewNode(newEntries, undefined, ownerID, canEdit);
+};
+
+var SortedMapBtreeNodePacker = (function (SortedMapPacker$$1) {
+  function SortedMapBtreeNodePacker () {
+    SortedMapPacker$$1.apply(this, arguments);
+  }
+
+  if ( SortedMapPacker$$1 ) SortedMapBtreeNodePacker.__proto__ = SortedMapPacker$$1;
+  SortedMapBtreeNodePacker.prototype = Object.create( SortedMapPacker$$1 && SortedMapPacker$$1.prototype );
+  SortedMapBtreeNodePacker.prototype.constructor = SortedMapBtreeNodePacker;
+
+  SortedMapBtreeNodePacker.prototype.calcPlanCnt = function calcPlanCnt (order, height) {
+    if (height < 1 || height > 20) {
+      throw new Error('Height is out of supported limit');
+    }
+
+    // The recursive algorithm would be:
+    //
+    // if(height <= 1) {
+    // 	return order - 1;
+    // }
+    // return order * this.calcPlanCnt(order, height - 1) + (order - 1);
+
+    var n = order - 1;
+
+    for (var h = 1; h < height; h++) {
+      n = n * order + (order - 1);
+    }
+
+    return n;
+  };
+
+  SortedMapBtreeNodePacker.prototype.prepareCachedPlan = function prepareCachedPlan (order, n) {
+    var key = order.toString() + ' ' + n.toString();
+
+    var cachedPlan = SortedMapBtreeNodePacker.cache[key];
+
+    if (cachedPlan) {
+      return cachedPlan;
+    }
+
+    var plan = this.preparePlan(order, n);
+    this.verifyPlan(plan);
+
+    if (
+      order < 100 &&
+      n <= 100 &&
+      n >= order &&
+      SortedMapBtreeNodePacker.cacheSize < 500
+    ) {
+      SortedMapBtreeNodePacker.cache[key] = plan;
+      SortedMapBtreeNodePacker.cacheSize++;
+    }
+
+    return plan;
+  };
+
+  SortedMapBtreeNodePacker.prototype.preparePlan = function preparePlan (order, n) {
+    //
+    // First determine height of the tree we are building
+    //
+    var order1 = order - 1;
+    var height = 1;
+    var maxEntriesCnt = order1;
+    var maxEntriesCnt1;
+    while (maxEntriesCnt < n) {
+      maxEntriesCnt1 = maxEntriesCnt;
+      maxEntriesCnt = maxEntriesCnt * order + order1;
+      height++;
+    }
+
+    if (maxEntriesCnt === n) {
+      // Exact match for the full tree
+      return {
+        op: 'build',
+        full: true,
+        height: height,
+        order: order,
+        repeat: 1,
+        total: n
+      };
+    }
+
+    if (height === 1) {
+      return {
+        op: 'build',
+        full: false,
+        height: height,
+        order: order,
+        repeat: 1,
+        total: n
+      };
+    }
+
+    //
+    // Number of entries in subtrees of (height - 1)
+    //
+    var planCnt1 = maxEntriesCnt1;
+
+    //
+    // Then determine the root order
+    //
+    var rootOrder = 1 + Math.floor(n / (planCnt1 + 1));
+
+    if (rootOrder < 2) {
+      throw new Error(
+        'Something is wrong, the rootOrder is expected to be >= 2'
+      );
+    }
+
+    if (rootOrder * planCnt1 + (rootOrder - 1) === n) {
+      var repeat = rootOrder;
+      var repPlan = [];
+      var total$1 = repeat * planCnt1 + repeat - 1;
+      repPlan.push({
+        op: 'build',
+        full: true,
+        height: height - 1,
+        order: order,
+        repeat: rootOrder,
+        total: total$1
+      });
+      return {
+        op: 'assemble',
+        height: height,
+        order: order,
+        total: total$1,
+        items: repPlan
+      };
+    }
+
+    // We have to adjust last two subtrees
+    var plan = [];
+
+    if (rootOrder > 2) {
+      var repeat$1 = rootOrder - 2;
+      var total$2 = repeat$1 * planCnt1 + repeat$1 - 1;
+      var build = {
+        op: 'build',
+        full: true,
+        height: height - 1,
+        order: order,
+        repeat: repeat$1,
+        total: total$2
+      };
+      plan.push(build);
+      n -= total$2;
+      n--;
+    }
+
+    // Find feasible plan for 2 subtrees and n entries
+    n--; // 1 more entry will be in between the two subtrees
+    var n2 = Math.floor(n / 2);
+    if (n - n2 > 0) {
+      plan.push(this.prepareCachedPlan(order, n - n2));
+    }
+    if (n2 > 0) {
+      plan.push(this.prepareCachedPlan(order, n2));
+    }
+
+    var total = 0;
+    for (var i in plan) {
+      total += plan[i].total;
+    }
+    total += plan.length - 1;
+
+    return {
+      op: 'assemble',
+      height: height,
+      order: order,
+      total: total,
+      items: plan
+    };
+  };
+
+  SortedMapBtreeNodePacker.prototype.verifyPlan = function verifyPlan (plan, level) {
+    var this$1 = this;
+
+    function failed(msg) {
+      throw new Error(msg);
+    }
+
+    if (level === undefined) {
+      level = 0;
+    }
+
+    if (plan.op === 'assemble') {
+      var cnt = 0;
+
+      for (var i in plan.items) {
+        var pl = plan.items[i];
+        cnt += pl.total;
+        if (pl.op === 'build') {
+          if (!(pl.order >= pl.repeat)) {
+            failed(
+              'Plan verification test failed: pl.order >= pl.repeat: ' +
+                JSON.stringify(pl)
+            );
+          }
+        }
+        if (!(plan.height === pl.height + 1)) {
+          failed('Plan verification test failed: plan.height === pl.height+1');
+        }
+        this$1.verifyPlan(pl, level + 1);
+      }
+      cnt += plan.items.length - 1;
+      if (!(plan.total === cnt)) {
+        failed('Count mismatch: ' + plan.total + ' vs ' + cnt);
+      }
+    } else if (plan.op === 'build') {
+      // Verify plan consistency
+      var ec = this.calcPlanCnt(plan.order, plan.height);
+      if (plan.full) {
+        var cnt$1 = ec * plan.repeat + plan.repeat - 1;
+        if (!(plan.total === cnt$1)) {
+          failed('Plan verification test failed: plan.total === ec');
+        }
+      } else {
+        if (!(plan.height === 1)) {
+          failed(
+            'Plan verification test failed: expected height 1, got instead ' +
+              plan.height
+          );
+        }
+        if (!(plan.total < ec)) {
+          failed('Plan verification test failed: plan.total < ec');
+        }
+        var halfSize = Math.floor((plan.order - 1) / 2);
+        if (level > 0 && !(plan.total >= halfSize)) {
+          failed(
+            'Plan verification test failed: plan.total >= halfSize: ' +
+              plan.total +
+              ', ' +
+              halfSize
+          );
+        }
+      }
+    } else {
+      failed('Plan verification test failed: invalid op: ' + plan.op);
+    }
+  };
+
+  // Pack the map according to the plan
+  // Return a new root
+  //
+  // Sample Plan:
+  //   {
+  //     "op": "assemble",
+  //     "height": 2,
+  //     "order": 7,
+  //     "total": 10,
+  //     "items": [
+  //         {
+  //             "op": "build",
+  //             "full": false,
+  //             "height": 1,
+  //             "order": 7,
+  //             "repeat": 1,
+  //             "total": 5
+  //         },
+  //         {
+  //             "op": "build",
+  //             "full": false,
+  //             "height": 1,
+  //             "order": 7,
+  //             "repeat": 1,
+  //             "total": 4
+  //         }
+  //     ]
+  // }
+  //
+
+  SortedMapBtreeNodePacker.prototype.runPlan = function runPlan (plan, iter) {
+    var this$1 = this;
+
+    function failed(msg) {
+      msg = 'Packing Plan is corrupt: ' + msg;
+      throw new Error(msg);
+    }
+
+    if (plan.op === 'assemble') {
+      for (var i in plan.items) {
+        if (i > 0) {
+          this$1.populate(iter, 1);
+        }
+        this$1.runPlan(plan.items[i], iter);
+      }
+    } else if (plan.op === 'build') {
+      var n = (plan.total - plan.repeat + 1) / plan.repeat;
+      for (var i$1 = 0; i$1 < plan.repeat; i$1++) {
+        if (i$1 > 0) {
+          this$1.populate(iter, 1);
+        }
+        this$1.populate(iter, n);
+      }
+    } else {
+      failed('invalid op: ' + plan.op);
+    }
+    this.flush(plan.height);
+  };
+
+  SortedMapBtreeNodePacker.prototype.flush = function flush (height) {
+    var this$1 = this;
+
+    for (var i = 0; i < height; i++) {
+      var level = i;
+      if (this$1.stack[level]) {
+        // flush this level
+        this$1.prepareLevel(level + 1);
+        this$1.addNode(level + 1, this$1.stack[level]);
+        this$1.stack[level] = undefined;
+        // next entry goes to parent
+      }
+    }
+    this.stackLevel = height;
+  };
+
+  SortedMapBtreeNodePacker.prototype.populate = function populate (iter, n) {
+    var this$1 = this;
+
+    for (var i = 0; i < n; i++) {
+      var next = iter.next();
+      this$1.entriesCnt++;
+      if (next.done) {
+        throw new Error(
+          'unexpected end of iterator at ' +
+            this$1.entriesCnt +
+            ' vs ' +
+            iter.size
+        );
+      }
+      var entry = next.value;
+
+      var level = this$1.stackLevel;
+      this$1.prepareLevel(level);
+      this$1.addEntry(level, entry);
+
+      if (level > 0) {
+        // Node - go populate the subtree now
+        this$1.stackLevel = 0;
+      } else if (this$1.stackIndices[level] === this$1.order - 1) {
+        // Leaf - we have filled all entries
+        // flush the leaf
+        this$1.prepareLevel(level + 1);
+        this$1.addNode(level + 1, this$1.stack[level]);
+        this$1.stack[level] = undefined;
+        // next entry goes to parent
+        this$1.stackLevel++;
+      }
+    }
+  };
+
+  SortedMapBtreeNodePacker.prototype.addEntry = function addEntry (level, entry) {
+    this.stack[level].entries[this.stackIndices[level]++] = entry;
+  };
+
+  SortedMapBtreeNodePacker.prototype.addNode = function addNode (level, node) {
+    this.stack[level].nodes[this.stackIndices[level]] = node;
+
+    if (this.stackIndices[level] === this.order - 1) {
+      // we filled the whole node
+      // flush the node
+      this.prepareLevel(level + 1);
+      this.addNode(level + 1, this.stack[level]);
+      this.stack[level] = undefined;
+      // next entry goes to parent
+      this.stackLevel++;
+    }
+  };
+
+  SortedMapBtreeNodePacker.prototype.prepareLevel = function prepareLevel (level) {
+    if (!this.stack[level]) {
+      var entries = allocArray(this.order - 1);
+      entries.length = 0;
+      var nodes;
+      if (level > 0) {
+        nodes = allocArray(this.order);
+        nodes.length = 0;
+      }
+      this.stack[level] = new SortedMapBtreeNode(
+        this.comparator,
+        this.options,
+        this.ownerID,
+        entries,
+        nodes
+      );
+      this.stackIndices[level] = 0;
+    }
+  };
+
+  SortedMapBtreeNodePacker.prototype.finish = function finish () {
+    var level = this.stackLevel;
+    if (level >= this.stack.length) {
+      return undefined;
+    }
+    return this.stack[level].nodes[0];
+  };
+
+  // Will pack seq and storie it in the map
+  SortedMapBtreeNodePacker.prototype.pack = function pack (comparator, options, ownerID, collection) {
+    if (options && options.type && options.type !== DEFAULT_TYPE) {
+      throw new Error('Unsuported type by btree factory: ' + options.type);
+    }
+
+    this.order = options && options.btreeOrder
+      ? options.btreeOrder
+      : DEFAULT_BTREE_ORDER;
+
+    var kc = KeyedCollection(collection);
+    assertNotInfinite(kc.size);
+
+    var plan = this.preparePlan(this.order, kc.size);
+
+    this.comparator = comparator;
+    this.options = options;
+    this.ownerID = ownerID;
+    this.stack = [];
+    this.stackIndices = [];
+    this.stackLevel = 0;
+    this.entriesCnt = 0;
+
+    var iter = kc.entries();
+    this.runPlan(plan, iter);
+
+    if (!iter.next().done) {
+      throw new Error('iterator did not end when expected');
+    }
+
+    return this.finish();
+  };
+
+  return SortedMapBtreeNodePacker;
+}(SortedMapPacker));
+
+SortedMapBtreeNodePacker.cache = {};
+SortedMapBtreeNodePacker.cacheSize = 0;
+
+var SortedMapBtreeNodeFactory = (function (SortedMapNodeFactory$$1) {
+  function SortedMapBtreeNodeFactory() {}
+
+  if ( SortedMapNodeFactory$$1 ) SortedMapBtreeNodeFactory.__proto__ = SortedMapNodeFactory$$1;
+  SortedMapBtreeNodeFactory.prototype = Object.create( SortedMapNodeFactory$$1 && SortedMapNodeFactory$$1.prototype );
+  SortedMapBtreeNodeFactory.prototype.constructor = SortedMapBtreeNodeFactory;
+
+  SortedMapBtreeNodeFactory.prototype.createNode = function createNode (comparator, options, ownerID, entries, nodes) {
+    return new SortedMapBtreeNode(comparator, options, ownerID, entries, nodes);
+  };
+
+  SortedMapBtreeNodeFactory.prototype.createPacker = function createPacker () {
+    return new SortedMapBtreeNodePacker();
+  };
+
+  SortedMapBtreeNodeFactory.prototype.createIterator = function createIterator (map, type, reverse) {
+    return new SortedMapBtreeNodeIterator(map, type, reverse);
+  };
+
+  return SortedMapBtreeNodeFactory;
+}(SortedMapNodeFactory));
+
+/**
+ *  Copyright (c) 2014-2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  Original source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+var SortedMap = (function (Map$$1) {
+  function SortedMap(value, comparator, options) {
+    if (!comparator) {
+      if(this instanceof SortedMap) {
+        comparator = this.getComparator();
+      }
+      if (!comparator) {
+        comparator = SortedMap.defaultComparator;
+      }
+    }
+    if (!options) {
+      if(this instanceof SortedMap) {
+        options = this.getOptions();
+      }
+      if (!options) {
+        options = SortedMap.defaultOptions;
+      }
+    }
+
+    return value === null || value === undefined
+      ? emptySortedMap(comparator, options)
+      : isSortedMap(value) &&
+          value.getComparator() === comparator &&
+          value.getOptions() === options
+          ? value
+          : emptySortedMap(comparator, options).withMutations(function (map) {
+              map.pack(value);
+            });
+  }
+
+  if ( Map$$1 ) SortedMap.__proto__ = Map$$1;
+  SortedMap.prototype = Object.create( Map$$1 && Map$$1.prototype );
+  SortedMap.prototype.constructor = SortedMap;
+
+  SortedMap.of = function of () {
+    var keyValues = [], len = arguments.length;
+    while ( len-- ) keyValues[ len ] = arguments[ len ];
+
+    return emptySortedMap().withMutations(function (map) {
+      for (var i = 0; i < keyValues.length; i += 2) {
+        if (i + 1 >= keyValues.length) {
+          throw new Error('Missing value for key: ' + keyValues[i]);
+        }
+        map.set(keyValues[i], keyValues[i + 1]);
+      }
+    });
+  };
+
+  SortedMap.prototype.toString = function toString () {
+    return this.__toString('SortedMap {', '}');
+  };
+
+  // @pragma Access
+
+  SortedMap.prototype.getComparator = function getComparator () {
+    return this._comparator;
+  };
+
+  SortedMap.prototype.getOptions = function getOptions () {
+    return this._options;
+  };
+
+  SortedMap.prototype.get = function get (k, notSetValue) {
+    return this._root ? this._root.get(k, notSetValue) : notSetValue;
+  };
+
+  // @pragma Modification
+
+  SortedMap.prototype.clear = function clear () {
+    if (this.size === 0) {
+      return this;
+    }
+    if (this.__ownerID) {
+      this.size = 0;
+      this._root = null;
+      this.__altered = true;
+      return this;
+    }
+    return emptySortedMap(this._comparator, this._options);
+  };
+
+  SortedMap.prototype.pack = function pack (value) {
+    var this$1 = this;
+
+    var collection;
+    if (value === undefined) {
+      collection = this;
+    } else {
+      // Sort and deduplicate the entries
+      var index = 0;
+      var entries = KeyedCollection(value)
+        .map(function (v, k) { return [k, v, index++]; })
+        .toArray();
+
+      if (entries.length === 0) {
+        if (this.__ownerID) {
+          this._root = undefined;
+          (this.size = 0), (this.__altered = true);
+          return this;
+        }
+        return emptySortedMap(this._comparator, this._options);
+      }
+      entries.sort(function (a, b) { return this$1._comparator(a[0], b[0]) || a[2] - b[2]; });
+      var result = [];
+      for (var i = 0, stop = entries.length - 1; i < stop; i++) {
+        var entry = entries[i];
+        var nextEntry = entries[i + 1];
+        if (this$1._comparator(entry[0], nextEntry[0]) < 0) {
+          var newEntry = [entry[0], entry[1]];
+          result.push(newEntry);
+        }
+      }
+      // push the last ownerID
+      var entry$1 = entries[entries.length - 1];
+      var newEntry$1 = [entry$1[0], entry$1[1]];
+      result.push(newEntry$1);
+      collection = KeyedSeq(result);
+    }
+    assertNotInfinite(collection.size);
+
+    var newSize = collection.size;
+    var newRoot = this._factory
+      .createPacker()
+      .pack(this._comparator, this._options, this.__ownerID, collection);
+
+    if (this.__ownerID) {
+      this._root = newRoot;
+      (this.size = newSize), (this.__altered = true);
+      return this;
+    }
+    return newRoot
+      ? makeSortedMap(this._comparator, this._options, newSize, newRoot)
+      : emptySortedMap(this._comparator, this._options);
+  };
+
+  SortedMap.prototype.set = function set (k, v) {
+    return updateMap$1(this, k, v);
+  };
+
+  SortedMap.prototype.remove = function remove (k) {
+    return updateMap$1(this, k, NOT_SET);
+  };
+
+  SortedMap.prototype.fastRemove = function fastRemove (k) {
+    return updateMap$1(this, k, NOT_SET, true);
+  };
+
+  SortedMap.prototype.subMap = function subMap$1 (beginKey, endKey) {
+    return subMap(this, beginKey, endKey);
+  };
+
+  // @pragma Composition
+
+  SortedMap.prototype.sort = function sort (comparator) {
+    return SortedMap(this, comparator, this.getOptions());
+  };
+
+  SortedMap.prototype.sortBy = function sortBy (mapper, comparator) {
+    return SortedMap(mapFactory(this, mapper), comparator, this.getOptions());
+  };
+
+  // @pragma Mutability
+
+  SortedMap.prototype.__iterator = function __iterator (type, reverse) {
+    return this._factory.createIterator(this, type, reverse);
+  };
+
+  SortedMap.prototype.__ensureOwner = function __ensureOwner (ownerID) {
+    if (ownerID === this.__ownerID) {
+      return this;
+    }
+    if (!ownerID) {
+      if (this.size === 0) {
+        return emptySortedMap(this._comparator, this._options);
+      }
+      this.__ownerID = ownerID;
+      this.__altered = false;
+      return this;
+    }
+    return makeSortedMap(
+      this._comparator,
+      this._options,
+      this.size,
+      this._root,
+      ownerID
+    );
+  };
+
+  SortedMap.prototype.checkConsistency = function checkConsistency (printFlag) {
+    var this$1 = this;
+
+    if (this._root) {
+      if (!(this.size > 0)) {
+        return 1;
+      }
+      return this._root.checkConsistency(printFlag);
+    } else if (!(this.size === 0)) {
+      return 2;
+    }
+
+    var n = 0;
+    var prevKey;
+    this.keySeq().forEach(function (key) {
+      if (n && !(this$1._comparator(prevKey, key) < 0)) {
+        return 3;
+      }
+      prevKey = key;
+      n++;
+    });
+
+    if (this.size !== n) {
+      return 4;
+    }
+
+    return 0;
+  };
+
+  SortedMap.prototype.print = function print (maxDepth) {
+    var header = 'SORTED MAP: size=' + this.size;
+    if (this._options) {
+      header = header + ', options=' + JSON.stringify(this._options);
+    }
+    console.log(header);
+    if (this._root) {
+      this._root.print(1, maxDepth);
+    }
+    return this;
+  };
+
+  return SortedMap;
+}(Map));
+
+function isSortedMap(maybeSortedMap) {
+  return isMap(maybeSortedMap) && isSorted(maybeSortedMap);
+}
+
+SortedMap.isSortedMap = isSortedMap;
+
+SortedMap.defaultComparator = defaultComparator$1;
+SortedMap.defaultOptions = {
+  type: 'btree'
+};
+
+var SortedMapPrototype = SortedMap.prototype;
+SortedMapPrototype[IS_SORTED_SENTINEL] = true;
+SortedMapPrototype[DELETE] = SortedMapPrototype.remove;
+SortedMapPrototype.removeIn = SortedMapPrototype.deleteIn;
+SortedMapPrototype.removeAll = SortedMapPrototype.deleteAll;
+
+function makeSortedMap(comparator, options, size, root, ownerID) {
+  var map = Object.create(SortedMapPrototype);
+  map._comparator = comparator ? comparator : SortedMap.defaultComparator;
+  map._options = options ? options : SortedMap.defaultOptions;
+  map.size = size;
+  map._root = root;
+  map._factory = SortedMap.getFactory(map._options);
+  map.__ownerID = ownerID;
+  map.__altered = false;
+
+  if (map._options.btreeOrder && map._options.btreeOrder < 3) {
+    throw new Error(
+      'SortedMap: minimum value of options.btreeOrder is 3, but got: ' +
+        map._options.btreeOrder
+    );
+  }
+
+  if (!map._factory) {
+    throw new Error('SortedMap type not supported: ' + map._options.type);
+  }
+
+  return map;
+}
+
+var DEFAULT_EMPTY_MAP;
+function emptySortedMap(comparator, options) {
+  if (
+    comparator === SortedMap.defaultComparator &&
+    options === SortedMap.defaultOptions
+  ) {
+    return DEFAULT_EMPTY_MAP ||
+      (DEFAULT_EMPTY_MAP = makeSortedMap(
+        SortedMap.defaultComparator,
+        SortedMap.defaultOptions,
+        0
+      ));
+  }
+  return makeSortedMap(comparator, options, 0);
+}
+
+function updateMap$1(map, k, v, fast) {
+  var remove = v === NOT_SET;
+  var root = map._root;
+  var newRoot;
+  var newSize;
+  if (!root) {
+    if (remove) {
+      return map;
+    }
+    newSize = 1;
+    var entries = [[k, v]];
+    newRoot = map._factory.createNode(
+      map._comparator,
+      map._options,
+      map.__ownerID,
+      entries
+    );
+  } else {
+    var didChangeSize = MakeRef(CHANGE_LENGTH);
+    var didAlter = MakeRef(DID_ALTER);
+
+    if (remove) {
+      if (fast) {
+        newRoot = map._root.fastRemove(
+          map.__ownerID,
+          k,
+          didChangeSize,
+          didAlter
+        );
+      } else {
+        newRoot = map._root.remove(map.__ownerID, k, didChangeSize, didAlter);
+      }
+    } else {
+      newRoot = map._root.upsert(map.__ownerID, k, v, didChangeSize, didAlter);
+    }
+    if (!GetRef(didAlter)) {
+      return map;
+    }
+    newSize = map.size + (GetRef(didChangeSize) ? remove ? -1 : 1 : 0);
+    if (newSize === 0) {
+      newRoot = undefined;
+    }
+  }
+  if (map.__ownerID) {
+    map.size = newSize;
+    map._root = newRoot;
+    map.__altered = true;
+    return map;
+  }
+  return newRoot
+    ? makeSortedMap(map._comparator, map._options, newSize, newRoot)
+    : emptySortedMap(map._comparator, map._options);
+}
+
+function defaultComparator$1(a, b) {
+  if (is(a, b)) {
+    return 0;
+  }
+
+  var ta = typeof a;
+  var tb = typeof b;
+
+  if (ta !== tb) {
+    return ta < tb ? -1 : 1;
+  }
+
+  switch (ta) {
+    case 'undefined':
+      // we should not get here and is above should take care of this case
+      break;
+    case 'object':
+      // Take care of null cases then convert objects to strings
+      if (a === null) {
+        return 1;
+      }
+      if (b === null) {
+        return -1;
+      }
+      a = a.toString();
+      b = b.toString();
+      break;
+    case 'boolean':
+      // default comparisons work
+      break;
+    case 'number':
+      // take care of NaN
+      if (is(a, NaN)) {
+        return 1;
+      }
+      if (is(b, NaN)) {
+        return -1;
+      }
+      // for all other cases the
+      // default comparisons work
+      break;
+    case 'string':
+      // default comparisons work
+      break;
+    case 'symbol':
+      // convert symbols to strings
+      a = a.toString();
+      b = b.toString();
+      break;
+    case 'function':
+      // convert functions to strings
+      a = a.toString();
+      b = b.toString();
+      break;
+    default:
+      // we should not get here as all types are covered
+      break;
+  }
+
+  return a < b ? -1 : (a > b ? 1 : 0);
+}
+
+//
+// Register all the factories
+//
+SortedMap.getFactory = function(options) {
+  var type = options && options.type
+    ? options.type
+    : SortedMap.defaultOptions.type;
+
+  return SortedMap.factories[type];
+};
+
+SortedMap.factories = {
+  btree: new SortedMapBtreeNodeFactory()
+};
+
 var Stack = (function (IndexedCollection$$1) {
   function Stack(value) {
     return value === null || value === undefined
@@ -3941,7 +6528,8 @@ function deepEqual(a, b) {
       a.__hash !== b.__hash) ||
     isKeyed(a) !== isKeyed(b) ||
     isIndexed(a) !== isIndexed(b) ||
-    isOrdered(a) !== isOrdered(b)
+    isOrdered(a) !== isOrdered(b) ||
+    isSorted(a) !== isSorted(b)
   ) {
     return false;
   }
@@ -4055,7 +6643,7 @@ var Set = (function (SetCollection$$1) {
   // @pragma Modification
 
   Set.prototype.add = function add (value) {
-    return updateSet(this, this._map.set(value, true));
+    return updateSet(this, this._map.set(value, value));
   };
 
   Set.prototype.remove = function remove (value) {
@@ -4159,7 +6747,7 @@ var Set = (function (SetCollection$$1) {
   };
 
   Set.prototype.__iterator = function __iterator (type, reverse) {
-    return this._map.map(function (_, k) { return k; }).__iterator(type, reverse);
+    return this._map.__iterator(type, reverse);
   };
 
   Set.prototype.__ensureOwner = function __ensureOwner (ownerID) {
@@ -4223,6 +6811,130 @@ function makeSet(map, ownerID) {
 var EMPTY_SET;
 function emptySet() {
   return EMPTY_SET || (EMPTY_SET = makeSet(emptyMap()));
+}
+
+/**
+ *  Copyright (c) 2014-2015, Facebook, Inc.
+ *  All rights reserved.
+ *
+ *  Original source code is licensed under the BSD-style license found in the
+ *  LICENSE file in the root directory of this source tree. An additional grant
+ *  of patent rights can be found in the PATENTS file in the same directory.
+ */
+
+var SortedSet = (function (Set$$1) {
+  function SortedSet(value, comparator, options) {
+    if (!comparator) {
+      if(this instanceof SortedSet) {
+        comparator = this.getComparator();
+      }
+      if (!comparator) {
+        comparator = SortedSet.defaultComparator;
+      }
+    }
+    if (!options) {
+      if(this instanceof SortedSet) {
+        options = this.getOptions();
+      }
+      if (!options) {
+        options = SortedSet.defaultOptions;
+      }
+    }
+    return value === null || value === undefined
+      ? emptySortedSet(comparator, options)
+      : isSortedSet(value) &&
+        value.getComparator() === comparator &&
+        value.getOptions() === options
+          ? value
+          : emptySortedSet(comparator, options).withMutations(function (set) {
+              set.pack(value);
+            });
+  }
+
+  if ( Set$$1 ) SortedSet.__proto__ = Set$$1;
+  SortedSet.prototype = Object.create( Set$$1 && Set$$1.prototype );
+  SortedSet.prototype.constructor = SortedSet;
+
+  SortedSet.of = function of (/*...values*/) {
+    return this(arguments);
+  };
+
+  SortedSet.fromKeys = function fromKeys (value) {
+    return this(KeyedCollection(value).keySeq());
+  };
+
+  SortedSet.prototype.toString = function toString () {
+    return this.__toString('SortedSet {', '}');
+  };
+
+  // @pragma Access
+
+  SortedSet.prototype.getComparator = function getComparator () {
+    return this._map.getComparator();
+  };
+
+  SortedSet.prototype.getOptions = function getOptions () {
+    return this._map.getOptions();
+  };
+
+  // @pragma Modification
+
+  SortedSet.prototype.pack = function pack (value) {
+    var seq = value === undefined ? undefined : SetCollection(value).toKeyedSeq().mapKeys(function (k, v){ return v; });
+    return updateSortedSet(this, this._map.pack(seq));
+  };
+
+  SortedSet.prototype.sort = function sort (comparator) {
+    // Late binding
+    return SortedSet(this, comparator, this.getOptions());
+  };
+
+  SortedSet.prototype.sortBy = function sortBy (mapper, comparator) {
+    // Late binding
+    return SortedSet(mapFactory$1(this, mapper), comparator, this.getOptions());
+  };
+
+  return SortedSet;
+}(Set));
+
+function isSortedSet(maybeSortedSet) {
+  return isSet(maybeSortedSet) && isSorted(maybeSortedSet);
+}
+
+SortedSet.isSortedSet = isSortedSet;
+
+SortedSet.defaultComparator = SortedMap.defaultComparator;
+SortedSet.defaultOptions = SortedMap.defaultOptions;
+
+var SortedSetPrototype = SortedSet.prototype;
+SortedSetPrototype[IS_SORTED_SENTINEL] = true;
+
+SortedSetPrototype.__empty = function() {
+  return emptySortedSet(this.getComparator(), this.getOptions());
+};
+SortedSetPrototype.__make = makeSortedSet;
+
+function updateSortedSet(set, newMap) {
+  if (set.__ownerID) {
+    set.size = newMap.size;
+    set._map = newMap;
+    return set;
+  }
+  return newMap === set._map
+    ? set
+    : newMap.size === 0 ? set.__empty() : set.__make(newMap);
+}
+
+function makeSortedSet(map, ownerID) {
+  var set = Object.create(SortedSetPrototype);
+  set.size = map ? map.size : 0;
+  set._map = map;
+  set.__ownerID = ownerID;
+  return set;
+}
+
+function emptySortedSet(comparator, options) {
+  return makeSortedSet(emptySortedMap(comparator, options));
 }
 
 /**
@@ -4412,6 +7124,16 @@ mixin(Collection, {
     return OrderedMap(this.toKeyedSeq());
   },
 
+  toSortedMap: function toSortedMap(comparator, options) {
+    // Use Late Binding here to solve the circular dependency.
+    return SortedMap(this.toKeyedSeq(), comparator, options);
+  },
+
+  toSortedSet: function toSortedSet(comparator, options) {
+    // Use Late Binding here to solve the circular dependency.
+    return SortedSet(isKeyed(this) ? this.valueSeq() : this, comparator, options);
+  },
+
   toOrderedSet: function toOrderedSet() {
     // Use Late Binding here to solve the circular dependency.
     return OrderedSet(isKeyed(this) ? this.valueSeq() : this);
@@ -4519,7 +7241,7 @@ mixin(Collection, {
   },
 
   map: function map(mapper, context) {
-    return reify(this, mapFactory(this, mapper, context));
+    return reify(this, mapFactory$1(this, mapper, context));
   },
 
   reduce: function reduce$1(reducer, initialReduction, context) {
@@ -5480,10 +8202,12 @@ var Immutable = {
   Seq: Seq,
   Map: Map,
   OrderedMap: OrderedMap,
+  SortedMap: SortedMap,
   List: List,
   Stack: Stack,
   Set: Set,
   OrderedSet: OrderedSet,
+  SortedSet: SortedSet,
 
   Record: Record,
   Range: Range,
@@ -5499,6 +8223,7 @@ var Immutable = {
   isIndexed: isIndexed,
   isAssociative: isAssociative,
   isOrdered: isOrdered,
+  isSorted: isSorted,
   isValueObject: isValueObject
 };
 
@@ -5511,10 +8236,12 @@ exports.Iterable = Iterable;
 exports.Seq = Seq;
 exports.Map = Map;
 exports.OrderedMap = OrderedMap;
+exports.SortedMap = SortedMap;
 exports.List = List;
 exports.Stack = Stack;
 exports.Set = Set;
 exports.OrderedSet = OrderedSet;
+exports.SortedSet = SortedSet;
 exports.Record = Record;
 exports.Range = Range;
 exports.Repeat = Repeat;
@@ -5527,6 +8254,7 @@ exports.isKeyed = isKeyed;
 exports.isIndexed = isIndexed;
 exports.isAssociative = isAssociative;
 exports.isOrdered = isOrdered;
+exports.isSorted = isSorted;
 exports.isValueObject = isValueObject;
 
 Object.defineProperty(exports, '__esModule', { value: true });
