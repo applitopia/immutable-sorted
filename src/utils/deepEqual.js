@@ -12,7 +12,8 @@ import {
   isKeyed,
   isIndexed,
   isAssociative,
-  isOrdered
+  isOrdered,
+  isSorted
 } from '../Predicates';
 
 export default function deepEqual(a, b) {
@@ -28,7 +29,8 @@ export default function deepEqual(a, b) {
       a.__hash !== b.__hash) ||
     isKeyed(a) !== isKeyed(b) ||
     isIndexed(a) !== isIndexed(b) ||
-    isOrdered(a) !== isOrdered(b)
+    isOrdered(a) !== isOrdered(b) ||
+    isSorted(a) !== isSorted(b)
   ) {
     return false;
   }

@@ -14,7 +14,6 @@ import assertNotInfinite from './utils/assertNotInfinite';
 import { asImmutable } from './methods/asImmutable';
 import { asMutable } from './methods/asMutable';
 import { withMutations } from './methods/withMutations';
-
 import { OrderedSet } from './OrderedSet';
 
 export class Set extends SetCollection {

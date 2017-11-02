@@ -20,6 +20,7 @@ export const NOT_SET = {};
 // Boolean references, Rough equivalent of `bool &`.
 export const CHANGE_LENGTH = { value: false };
 export const DID_ALTER = { value: false };
+export const DID_MATCH = { value: false };
 
 export function MakeRef(ref) {
   ref.value = false;
@@ -28,6 +29,10 @@ export function MakeRef(ref) {
 
 export function SetRef(ref) {
   ref && (ref.value = true);
+}
+
+export function GetRef(ref) {
+  return ref.value;
 }
 
 // A function which returns a value representing an "owner" for transient writes
