@@ -1,636 +1,322 @@
-Immutable collections for JavaScript
-====================================
+Immutable Sorted Collections for JavaScript
+===========================================
 
-[![Build Status](https://travis-ci.org/facebook/immutable-js.svg?branch=master)](https://travis-ci.org/facebook/immutable-js)
+This package is an extension of [Immutable.js](https://facebook.github.io/immutable-js/) which provides
+additional Persistent Immutable data structures `SortedMap` and `SortedSet`.
 
-[Immutable][] data cannot be changed once created, leading to much simpler
-application development, no defensive copying, and enabling advanced memoization
-and change detection techniques with simple logic. [Persistent][] data presents
-a mutative API which does not update the data in-place, but instead always
-yields new updated data.
+These data structures are highly efficient minimizing the need to copy or cache data
+by structural sharing via [B-trees](https://en.wikipedia.org/wiki/B-tree).
 
-Immutable.js provides many Persistent Immutable data structures including:
-`List`, `Stack`, `Map`, `OrderedMap`, `Set`, `OrderedSet` and `Record`.
+Additional features include partial sort (first N items) using Floyd-Rivest select algorithm.
 
-These data structures are highly efficient on modern JavaScript VMs by using
-structural sharing via [hash maps tries][] and [vector tries][] as popularized
-by Clojure and Scala, minimizing the need to copy or cache data.
-
-Immutable.js also provides a lazy `Seq`, allowing efficient
-chaining of collection methods like `map` and `filter` without creating
-intermediate representations. Create some `Seq` with `Range` and `Repeat`.
-
-Want to hear more? Watch the presentation about Immutable.js:
-
-<a href="https://youtu.be/I7IdS-PbEgI" target="_blank" alt="Immutable Data and React"><img src="https://img.youtube.com/vi/I7IdS-PbEgI/0.jpg" /></a>
-
-[Persistent]: http://en.wikipedia.org/wiki/Persistent_data_structure
-[Immutable]: http://en.wikipedia.org/wiki/Immutable_object
-[hash maps tries]: http://en.wikipedia.org/wiki/Hash_array_mapped_trie
-[vector tries]: http://hypirion.com/musings/understanding-persistent-vector-pt-1
-
-
-Getting started
----------------
-
-Install `immutable` using npm.
-
-```shell
-npm install immutable
-```
-
-Then require it into any module.
-
-<!-- runkit:activate -->
-```js
-const { Map } = require('immutable')
-const map1 = Map({ a: 1, b: 2, c: 3 })
-const map2 = map1.set('b', 50)
-map1.get('b') + " vs. " + map2.get('b') // 2 vs. 50
-```
-
-### Browser
-
-Immutable.js has no dependencies, which makes it predictable to include in a Browser.
-
-It's highly recommended to use a module bundler like [webpack](https://webpack.github.io/),
-[rollup](https://rollupjs.org/), or
-[browserify](http://browserify.org/). The `immutable` npm module works
-without any additional consideration. All examples throughout the documentation
-will assume use of this kind of tool.
-
-Alternatively, Immutable.js may be directly included as a script tag. Download
-or link to a CDN such as [CDNJS](https://cdnjs.com/libraries/immutable)
-or [jsDelivr](https://www.jsdelivr.com/package/npm/immutable).
-
-Use a script tag to directly add `Immutable` to the global scope:
-
-```html
-<script src="immutable.min.js"></script>
-<script>
-  var map1 = Immutable.Map({a:1, b:2, c:3});
-  var map2 = map1.set('b', 50);
-  map1.get('b'); // 2
-  map2.get('b'); // 50
-</script>
-```
-
-Or use an AMD-style loader (such as [RequireJS](http://requirejs.org/)):
-
-```js
-require(['./immutable.min.js'], function (Immutable) {
-  var map1 = Immutable.Map({a:1, b:2, c:3});
-  var map2 = map1.set('b', 50);
-  map1.get('b'); // 2
-  map2.get('b'); // 50
-});
-```
-
-### Flow & TypeScript
-
-Use these Immutable collections and sequences as you would use native
-collections in your [Flowtype](https://flowtype.org/) or [TypeScript](http://typescriptlang.org) programs while still taking
-advantage of type generics, error detection, and auto-complete in your IDE.
-
-Installing `immutable` via npm brings with it type definitions for Flow (v0.55.0 or higher)
-and TypeScript (v2.1.0 or higher), so you shouldn't need to do anything at all!
-
-#### Using TypeScript with Immutable.js v4
-
-Immutable.js type definitions embrace ES2015. While Immutable.js itself supports
-legacy browsers and environments, its type definitions require TypeScript's 2015
-lib. Include either `"target": "es2015"` or `"lib": "es2015"` in your
-`tsconfig.json`, or provide `--target es2015` or `--lib es2015` to the
-`tsc` command.
-
-<!-- runkit:activate -->
-```js
-const { Map } = require("immutable");
-const map1 = Map({ a: 1, b: 2, c: 3 });
-const map2 = map1.set('b', 50);
-map1.get('b') + " vs. " + map2.get('b') // 2 vs. 50
-```
-
-#### Using TypeScript with Immutable.js v3 and earlier:
-
-Previous versions of Immutable.js include a reference file which you can include
-via relative path to the type definitions at the top of your file.
-
-```js
-///<reference path='./node_modules/immutable/dist/immutable.d.ts'/>
-import Immutable from require('immutable');
-var map1: Immutable.Map<string, number>;
-map1 = Immutable.Map({a:1, b:2, c:3});
-var map2 = map1.set('b', 50);
-map1.get('b'); // 2
-map2.get('b'); // 50
-```
-
-
-The case for Immutability
--------------------------
-
-Much of what makes application development difficult is tracking mutation and
-maintaining state. Developing with immutable data encourages you to think
-differently about how data flows through your application.
-
-Subscribing to data events throughout your application creates a huge overhead of
-book-keeping which can hurt performance, sometimes dramatically, and creates
-opportunities for areas of your application to get out of sync with each other
-due to easy to make programmer error. Since immutable data never changes,
-subscribing to changes throughout the model is a dead-end and new data can only
-ever be passed from above.
-
-This model of data flow aligns well with the architecture of [React][]
-and especially well with an application designed using the ideas of [Flux][].
-
-When data is passed from above rather than being subscribed to, and you're only
-interested in doing work when something has changed, you can use equality.
-
-Immutable collections should be treated as *values* rather than *objects*. While
-objects represent some thing which could change over time, a value represents
-the state of that thing at a particular instance of time. This principle is most
-important to understanding the appropriate use of immutable data. In order to
-treat Immutable.js collections as values, it's important to use the
-`Immutable.is()` function or `.equals()` method to determine value equality
-instead of the `===` operator which determines object reference identity.
-
-<!-- runkit:activate -->
-```js
-const { Map } = require('immutable')
-const map1 = Map( {a: 1, b: 2, c: 3 })
-const map2 = map1.set('b', 2)
-assert.equal(map1, map2) // uses map1.equals
-assert.strictEqual(map1, map2) // uses ===
-const map3 = map1.set('b', 50)
-assert.notEqual(map1, map3) // uses map1.equals
-```
-
-Note: As a performance optimization Immutable.js attempts to return the existing
-collection when an operation would result in an identical collection, allowing
-for using `===` reference equality to determine if something definitely has not
-changed. This can be extremely useful when used within a memoization function
-which would prefer to re-run the function if a deeper equality check could
-potentially be more costly. The `===` equality check is also used internally by
-`Immutable.is` and `.equals()` as a performance optimization.
-
-If an object is immutable, it can be "copied" simply by making another reference
-to it instead of copying the entire object. Because a reference is much smaller
-than the object itself, this results in memory savings and a potential boost in
-execution speed for programs which rely on copies (such as an undo-stack).
-
-<!-- runkit:activate -->
-```js
-const { Map } = require('immutable')
-const map1 = Map({ a: 1, b: 2, c: 3 })
-const clone = map1;
-```
-
-[React]: http://facebook.github.io/react/
-[Flux]: http://facebook.github.io/flux/docs/overview.html
-
-
-JavaScript-first API
---------------------
-
-While Immutable.js is inspired by Clojure, Scala, Haskell and other functional
-programming environments, it's designed to bring these powerful concepts to
-JavaScript, and therefore has an Object-Oriented API that closely mirrors that
-of [ES2015][] [Array][], [Map][], and [Set][].
-
-[ES2015]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/New_in_JavaScript/ECMAScript_6_support_in_Mozilla
-[Array]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array
-[Map]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Map
-[Set]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Set
-
-The difference for the immutable collections is that methods which would mutate
-the collection, like `push`, `set`, `unshift` or `splice`, instead return a new
-immutable collection. Methods which return new arrays, like `slice` or `concat`,
-instead return new immutable collections.
-
-<!-- runkit:activate -->
-```js
-const { List } = require('immutable')
-const list1 = List([ 1, 2 ]);
-const list2 = list1.push(3, 4, 5);
-const list3 = list2.unshift(0);
-const list4 = list1.concat(list2, list3);
-assert.equal(list1.size, 2);
-assert.equal(list2.size, 5);
-assert.equal(list3.size, 6);
-assert.equal(list4.size, 13);
-assert.equal(list4.get(0), 1);
-```
-
-Almost all of the methods on [Array][] will be found in similar form on
-`Immutable.List`, those of [Map][] found on `Immutable.Map`, and those of [Set][]
-found on `Immutable.Set`, including collection operations like `forEach()`
-and `map()`.
-
-<!-- runkit:activate -->
-```js
-const { Map } = require('immutable')
-const alpha = Map({ a: 1, b: 2, c: 3, d: 4 });
-alpha.map((v, k) => k.toUpperCase()).join();
-// 'A,B,C,D'
-```
-
-### Convert from raw JavaScript objects and arrays.
-
-Designed to inter-operate with your existing JavaScript, Immutable.js
-accepts plain JavaScript Arrays and Objects anywhere a method expects an
-`Collection`.
-
-<!-- runkit:activate -->
-```js
-const { Map, List } = require('immutable')
-const map1 = Map({ a: 1, b: 2, c: 3, d: 4 })
-const map2 = Map({ c: 10, a: 20, t: 30 })
-const obj = { d: 100, o: 200, g: 300 }
-const map3 = map1.merge(map2, obj);
-// Map { a: 20, b: 2, c: 10, d: 100, t: 30, o: 200, g: 300 }
-const list1 = List([ 1, 2, 3 ])
-const list2 = List([ 4, 5, 6 ])
-const array = [ 7, 8, 9 ]
-const list3 = list1.concat(list2, array)
-// List [ 1, 2, 3, 4, 5, 6, 7, 8, 9 ]
-```
-
-This is possible because Immutable.js can treat any JavaScript Array or Object
-as a Collection. You can take advantage of this in order to get sophisticated
-collection methods on JavaScript Objects, which otherwise have a very sparse
-native API. Because Seq evaluates lazily and does not cache intermediate
-results, these operations can be extremely efficient.
-
-<!-- runkit:activate -->
-```js
-const { Seq } = require('immutable')
-const myObject = { a: 1, b: 2, c: 3 }
-Seq(myObject).map(x => x * x).toObject();
-// { a: 1, b: 4, c: 9 }
-```
-
-Keep in mind, when using JS objects to construct Immutable Maps, that
-JavaScript Object properties are always strings, even if written in a quote-less
-shorthand, while Immutable Maps accept keys of any type.
-
-<!-- runkit:activate -->
-```js
-const { fromJS } = require('immutable')
-
-const obj = { 1: "one" }
-Object.keys(obj) // [ "1" ]
-assert.equal(obj["1"], obj[1])   // "one" === "one"
-
-const map = fromJS(obj)
-assert.notEqual(map.get("1"), map.get(1)) // "one" !== undefined
-```
-
-Property access for JavaScript Objects first converts the key to a string, but
-since Immutable Map keys can be of any type the argument to `get()` is
-not altered.
-
-
-### Converts back to raw JavaScript objects.
-
-All Immutable.js Collections can be converted to plain JavaScript Arrays and
-Objects shallowly with `toArray()` and `toObject()` or deeply with `toJS()`.
-All Immutable Collections also implement `toJSON()` allowing them to be passed
-to `JSON.stringify` directly.
-
-<!-- runkit:activate -->
-```js
-const { Map, List } = require('immutable')
-const deep = Map({ a: 1, b: 2, c: List([ 3, 4, 5 ]) })
-console.log(deep.toObject()) // { a: 1, b: 2, c: List [ 3, 4, 5 ] }
-console.log(deep.toArray()) // [ 1, 2, List [ 3, 4, 5 ] ]
-console.log(deep.toJS()) // { a: 1, b: 2, c: [ 3, 4, 5 ] }
-JSON.stringify(deep) // '{"a":1,"b":2,"c":[3,4,5]}'
-```
-
-### Embraces ES2015
-
-Immutable.js supports all JavaScript environments, including legacy
-browsers (even IE8). However it also takes advantage of features added to
-JavaScript in [ES2015][], the latest standard version of JavaScript, including
-[Iterators][], [Arrow Functions][], [Classes][], and [Modules][]. It's inspired
-by the native [Map][] and [Set][] collections added to ES2015.
-
-All examples in the Documentation are presented in ES2015. To run in all
-browsers, they need to be translated to ES5.
-
-```js
-// ES2015
-const mapped = foo.map(x => x * x);
-// ES5
-var mapped = foo.map(function (x) { return x * x; });
-```
-
-All Immutable.js collections are [Iterable][Iterators], which allows them to be
-used anywhere an Iterable is expected, such as when spreading into an Array.
-
-<!-- runkit:activate -->
-```js
-const { List } = require('immutable')
-const aList = List([ 1, 2, 3 ])
-const anArray = [ 0, ...aList, 4, 5 ] // [ 0, 1, 2, 3, 4, 5 ]
-```
-
-Note: A Collection is always iterated in the same order, however that order may
-not always be well defined, as is the case for the `Map` and `Set`.
-
-[Iterators]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Guide/The_Iterator_protocol
-[Arrow Functions]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Functions/Arrow_functions
-[Classes]: http://wiki.ecmascript.org/doku.php?id=strawman:maximally_minimal_classes
-[Modules]: http://www.2ality.com/2014/09/es6-modules-final.html
-
-
-Nested Structures
------------------
-
-The collections in Immutable.js are intended to be nested, allowing for deep
-trees of data, similar to JSON.
-
-<!-- runkit:activate -->
-```js
-const { fromJS } = require('immutable')
-const nested = fromJS({ a: { b: { c: [ 3, 4, 5 ] } } })
-// Map { a: Map { b: Map { c: List [ 3, 4, 5 ] } } }
-```
-
-A few power-tools allow for reading and operating on nested data. The
-most useful are `mergeDeep`, `getIn`, `setIn`, and `updateIn`, found on `List`,
-`Map` and `OrderedMap`.
-
-<!-- runkit:activate -->
-```js
-const { fromJS } = require('immutable')
-const nested = fromJS({ a: { b: { c: [ 3, 4, 5 ] } } })
-
-const nested2 = nested.mergeDeep({ a: { b: { d: 6 } } })
-// Map { a: Map { b: Map { c: List [ 3, 4, 5 ], d: 6 } } }
-
-console.log(nested2.getIn([ 'a', 'b', 'd' ])) // 6
-
-const nested3 = nested2.updateIn([ 'a', 'b', 'd' ], value => value + 1)
-console.log(nested3);
-// Map { a: Map { b: Map { c: List [ 3, 4, 5 ], d: 7 } } }
-
-const nested4 = nested3.updateIn([ 'a', 'b', 'c' ], list => list.push(6))
-// Map { a: Map { b: Map { c: List [ 3, 4, 5, 6 ], d: 7 } } }
-```
-
-
-Equality treats Collections as Values
--------------------------------------
-
-Immutable.js collections are treated as pure data *values*. Two immutable
-collections are considered *value equal* (via `.equals()` or `is()`) if they
-represent the same collection of values. This differs from JavaScript's typical
-*reference equal* (via `===` or `==`) for Objects and Arrays which only
-determines if two variables represent references to the same object instance.
-
-Consider the example below where two identical `Map` instances are not
-*reference equal* but are *value equal*.
-
-<!-- runkit:activate -->
-```js
-// First consider:
-const obj1 = { a: 1, b: 2, c: 3 }
-const obj2 = { a: 1, b: 2, c: 3 }
-obj1 !== obj2 // two different instances are always not equal with ===
-
-const { Map, is } = require('immutable')
-const map1 = Map({ a: 1, b: 2, c: 3 })
-const map2 = Map({ a: 1, b: 2, c: 3 })
-map1 !== map2 // two different instances are not reference-equal
-map1.equals(map2) // but are value-equal if they have the same values
-is(map1, map2) // alternatively can use the is() function
-```
-
-Value equality allows Immutable.js collections to be used as keys in Maps or
-values in Sets, and retrieved with different but equivalent collections:
-
-<!-- runkit:activate -->
-```js
-const { Map, Set } = require('immutable')
-const map1 = Map({ a: 1, b: 2, c: 3 })
-const map2 = Map({ a: 1, b: 2, c: 3 })
-const set = Set().add(map1)
-set.has(map2) // true because these are value-equal
-```
-
-Note: `is()` uses the same measure of equality as [Object.is][] for scalar
-strings and numbers, but uses value equality for Immutable collections,
-determining if both are immutable and all keys and values are equal
-using the same measure of equality.
-
-[Object.is]: https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/is
-
-#### Performance tradeoffs
-
-While value equality is useful in many circumstances, it has different
-performance characteristics than reference equality. Understanding these
-tradeoffs may help you decide which to use in each case, especially when used
-to memoize some operation.
-
-When comparing two collections, value equality may require considering every
-item in each collection, on an `O(N)` time complexity. For large collections of
-values, this could become a costly operation. Though if the two are not equal
-and hardly similar, the inequality is determined very quickly. In contrast, when
-comparing two collections with reference equality, only the initial references
-to memory need to be compared which is not based on the size of the collections,
-which has an `O(1)` time complexity. Checking reference equality is always very
-fast, however just because two collections are not reference-equal does not rule
-out the possibility that they may be value-equal.
-
-#### Return self on no-op optimization
-
-When possible, Immutable.js avoids creating new objects for updates where no
-change in *value* occurred, to allow for efficient *reference equality* checking
-to quickly determine if no change occurred.
-
-<!-- runkit:activate -->
-```js
-const { Map } = require('immutable')
-const originalMap = Map({ a: 1, b: 2, c: 3 })
-const updatedMap = originalMap.set('b', 2)
-updatedMap === originalMap // No-op .set() returned the original reference.
-```
-
-However updates which do result in a change will return a new reference. Each
-of these operations occur independently, so two similar updates will not return
-the same reference:
-
-<!-- runkit:activate -->
-```js
-const { Map } = require('immutable')
-const originalMap = Map({ a: 1, b: 2, c: 3 })
-const updatedMap = originalMap.set('b', 1000)
-// New instance, leaving the original immutable.
-updatedMap !== originalMap
-const anotherUpdatedMap = originalMap.set('b', 1000)
-// Despite both the results of the same operation, each created a new reference.
-anotherUpdatedMap !== updatedMap
-// However the two are value equal.
-anotherUpdatedMap.equals(updatedMap)
-```
-
-Batching Mutations
-------------------
-
-> If a tree falls in the woods, does it make a sound?
->
-> If a pure function mutates some local data in order to produce an immutable
-> return value, is that ok?
->
-> — Rich Hickey, Clojure
-
-Applying a mutation to create a new immutable object results in some overhead,
-which can add up to a minor performance penalty. If you need to apply a series
-of mutations locally before returning, Immutable.js gives you the ability to
-create a temporary mutable (transient) copy of a collection and apply a batch of
-mutations in a performant manner by using `withMutations`. In fact, this is
-exactly how  Immutable.js applies complex mutations itself.
-
-As an example, building `list2` results in the creation of 1, not 3, new
-immutable Lists.
-
-<!-- runkit:activate -->
-```js
-const { List } = require('immutable')
-const list1 = List([ 1, 2, 3 ]);
-const list2 = list1.withMutations(function (list) {
-  list.push(4).push(5).push(6);
-});
-assert.equal(list1.size, 3);
-assert.equal(list2.size, 6);
-```
-
-Note: Immutable.js also provides `asMutable` and `asImmutable`, but only
-encourages their use when `withMutations` will not suffice. Use caution to not
-return a mutable copy, which could result in undesired behavior.
-
-*Important!*: Only a select few methods can be used in `withMutations` including
-`set`, `push` and `pop`. These methods can be applied directly against a
-persistent data-structure where other methods like `map`, `filter`, `sort`,
-and `splice` will always return new immutable data-structures and never mutate
-a mutable collection.
-
-
-Lazy Seq
---------
-
-`Seq` describes a lazy operation, allowing them to efficiently chain
-use of all the higher-order collection methods (such as `map` and `filter`)
-by not creating intermediate collections.
-
-**Seq is immutable** — Once a Seq is created, it cannot be
-changed, appended to, rearranged or otherwise modified. Instead, any mutative
-method called on a `Seq` will return a new `Seq`.
-
-**Seq is lazy** — `Seq` does as little work as necessary to respond to any
-method call. Values are often created during iteration, including implicit
-iteration when reducing or converting to a concrete data structure such as
-a `List` or JavaScript `Array`.
-
-For example, the following performs no work, because the resulting
-`Seq`'s values are never iterated:
-
-```js
-const { Seq } = require('immutable')
-const oddSquares = Seq([ 1, 2, 3, 4, 5, 6, 7, 8 ])
-  .filter(x => x % 2 !== 0)
-  .map(x => x * x)
-```
-
-Once the `Seq` is used, it performs only the work necessary. In this
-example, no intermediate arrays are ever created, filter is called three
-times, and map is only called once:
-
-```js
-oddSquares.get(1); // 9
-```
-
-Any collection can be converted to a lazy Seq with `Seq()`.
-
-<!-- runkit:activate -->
-```js
-const { Map } = require('immutable')
-const map = Map({ a: 1, b: 2, c: 3 }
-const lazySeq = Seq(map)
-```
-
-`Seq` allows for the efficient chaining of operations, allowing for the
-expression of logic that can otherwise be very tedious:
-
-```js
-lazySeq
-  .flip()
-  .map(key => key.toUpperCase())
-  .flip()
-// Seq { A: 1, B: 1, C: 1 }
-```
-
-As well as expressing logic that would otherwise seem memory or time
-limited, for example `Range` is a special kind of Lazy sequence.
-
-<!-- runkit:activate -->
-```js
-const { Range } = require('immutable')
-Range(1, Infinity)
-  .skip(1000)
-  .map(n => -n)
-  .filter(n => n % 2 === 0)
-  .take(2)
-  .reduce((r, n) => r * n, 1)
-// 1006008
-```
-
-
-Documentation
--------------
-
-[Read the docs](http://facebook.github.io/immutable-js/docs/) and eat your vegetables.
-
-Docs are automatically generated from [Immutable.d.ts](https://github.com/facebook/immutable-js/blob/master/type-definitions/Immutable.d.ts).
-Please contribute!
-
-Also, don't miss the [Wiki](https://github.com/facebook/immutable-js/wiki) which
-contains articles on specific topics. Can't find something? Open an [issue](https://github.com/facebook/immutable-js/issues).
-
-
-Testing
+Version
 -------
 
-If you are using the [Chai Assertion Library](http://chaijs.com/), [Chai Immutable](https://github.com/astorije/chai-immutable) provides a set of assertions to use against Immutable.js collections.
+Current version [immutable-sorted@0.2.3](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.3) is an extension of [immutable-js@4.0.0-rc.9](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.9).
 
-
-Contribution
+Installation
 ------------
 
-Use [Github issues](https://github.com/facebook/immutable-js/issues) for requests.
+```shell
+npm install immutable-sorted
+```
 
-We actively welcome pull requests, learn how to [contribute](./.github/CONTRIBUTING.md).
-
-
-Changelog
+SortedSet
 ---------
 
-Changes are tracked as [Github releases](https://github.com/facebook/immutable-js/releases).
+See more details on [SortedSet](https://applitopia.github.io/pages/immutable-sorted/docs/#/SortedSet) page.
 
+SortedSet is a type of Set that keeps its values sorted by a comparator. The current implementation is using a classic B-Tree memory structure with O(N) space requirements and O(log N) get, add, and delete operations.
 
-Thanks
-------
+Example:
+```js
+> const { SortedSet } = require('immutable-sorted');
 
-[Phil Bagwell](https://www.youtube.com/watch?v=K2NYwP90bNs), for his inspiration
-and research in persistent data structures.
+> const set1=SortedSet(['orange', 'apple', 'banana']);
+SortedSet { "apple", "banana", "orange" }
 
-[Hugh Jackson](https://github.com/hughfdjackson/), for providing the npm package
-name. If you're looking for his unsupported package, see [this repository](https://github.com/hughfdjackson/immutable).
+> const set2=set1.add('mango');
+SortedSet { "apple", "banana", "mango", "orange" }
 
+> const set3=set2.delete('banana');
+SortedSet { "apple", "mango", "orange" }
+```
+
+Using a custom comparator:
+
+```js
+> const reverseCmp=(a,b)=>(a>b?-1:a<b?1:0);
+
+> const set4=SortedSet(set1, reverseCmp);
+SortedSet { "orange", "banana", "apple" }
+
+> const set5=set4.add('mango');
+SortedSet { "orange", "mango", "banana", "apple" }
+
+> const set6=set5.delete('banana');
+SortedSet { "orange", "mango", "apple" }
+```
+
+When iterating a SortedSet, the entries will be (value, value) pairs. Iteration order of a SortedSet is determined by a comparator.
+
+Set values, like Map keys, may be of any type. Equality is determined by comparator returning 0 value. In case of a custom comparator the equality may be redefined to have a different meaning than Immutable.is.
+
+Many real use cases will be about storing the whole objects in SortedSet. That will usually be meaningful only when custom comparator is defined.
+
+Let's consider the following example with city objects:
+
+```js
+> const { SortedSet, Seq, fromJS } = require('immutable-sorted');
+
+// Have an array of city objects
+> const cities=[
+   {state: 'MA', city: 'Boston'},
+   {city: 'Miami', state: 'FL'},
+   {city: 'Seattle', state: 'WA'},
+   {city: 'Phoenix', state: 'AZ'}];
+
+// Make a seq that converts cities from JS into immutable objects
+> const citiesSeq=Seq(cities).map((v)=>fromJS(v));
+
+// Create a default SortedSet
+> const set1=SortedSet(citiesSeq);
+SortedSet {
+   Map { "city": "Miami", "state": "FL" },
+   Map { "city": "Phoenix", "state": "AZ" },
+   Map { "city": "Seattle", "state": "WA" },
+   Map { "state": "MA", "city": "Boston" } }
+```
+
+When relying on defaultComparator, like in example above, the objects get sorted by their string representations from toString() method. This is usually not what the application designers want. In our case it makes more sense to sort by the city name, than the whole string representation.
+
+Let's create a custom comparator:
+
+```js
+// Define a general comparator
+> const cmp=(a,b)=>(a>b?1:(a<b?-1:0));
+
+// Define a comparator of city names
+> let citiesCmp=(a,b)=>cmp(a.get('city'), b.get('city'));
+
+// Create a SortedSet with custom comparator
+> const set2=SortedSet(citiesSeq, citiesCmp);
+SortedSet {
+   Map { "state": "MA", "city": "Boston" },
+   Map { "city": "Miami", "state": "FL" },
+   Map { "city": "Phoenix", "state": "AZ" },
+   Map { "city": "Seattle", "state": "WA" } }
+```
+
+The custom comparator that we have created seems to work as expected. Now let's add into the collection another city of Phoenix, this time from state Illinois.
+
+```js
+> const set3=set2.add(fromJS({city: 'Phoenix', state: 'IL'}));
+SortedSet {
+   Map { "state": "MA", "city": "Boston" },
+   Map { "city": "Miami", "state": "FL" },
+   Map { "city": "Phoenix", "state": "IL" },
+   Map { "city": "Seattle", "state": "WA" } }
+```
+
+The Phoenix, AZ had been replaced with Phoenix, IL. This is because of the way the custom comparator is defined. It determines equality by comparing city names only, therefore Phoenix, AZ and Phoenix, IL are equal according to this comparator. Let's try to extend the comparator to compare the city name first and if they match then determine the result by comparing the state.
+
+```js
+// Define more complex custom comparator
+> citiesCmp=(a,b)=>cmp(a.get('city'), b.get('city'))||cmp(a.get('state'), b.get('state'));
+
+// Create a new SortedSet with new custom comparator
+> const set4=SortedSet(set2, citiesCmp);
+SortedSet {
+   Map { "state": "MA", "city": "Boston" },
+   Map { "city": "Miami", "state": "FL" },
+   Map { "city": "Phoenix", "state": "AZ" },
+   Map { "city": "Seattle", "state": "WA" } }
+
+// set4 looks the same as set2, now let's add the conflicting Phoenix, IL to set4
+> const set5=set4.add(fromJS({city: 'Phoenix', state: 'IL'}));
+SortedSet {
+   Map { "state": "MA", "city": "Boston" },
+   Map { "city": "Miami", "state": "FL" },
+   Map { "city": "Phoenix", "state": "AZ" },
+   Map { "city": "Phoenix", "state": "IL" },
+   Map { "city": "Seattle", "state": "WA" } }
+```
+
+The custom comparator behaves as expected. Now let's swap the order of commands in the comparator and sort by state first and by city name second.
+
+```js
+> const stateCitiesCmp=(a,b)=>cmp(a.get('state'), b.get('state'))||cmp(a.get('city'), b.get('city'));
+
+> const set6=SortedSet(set5, stateCitiesCmp);
+SortedSet {
+   Map { "city": "Phoenix", "state": "AZ" },
+   Map { "city": "Miami", "state": "FL" },
+   Map { "city": "Phoenix", "state": "IL" },
+   Map { "state": "MA", "city": "Boston" },
+   Map { "city": "Seattle", "state": "WA" } }
+```
+
+SortedMap
+---------
+
+See more details on [SortedMap](https://applitopia.github.io/pages/immutable-sorted/docs/#/SortedMap) page.
+
+SortedMap is a type of Map that keeps its entries (their keys) sorted by a comparator. The current implementation is using a classic B-Tree memory structure with O(N) space requirements and O(log N) get, set, and delete operations.
+
+Example:
+```js
+const { SortedMap } = require('immutable-sorted');
+
+> const map1=SortedMap([['orange','orange'], ['apple','red'], ['banana','yellow']]);
+SortedMap { "apple": "red", "banana": "yellow", "orange": "orange" }
+
+> const map2=map1.set('mango', 'yellow/orange');
+SortedMap { "apple": "red", "banana": "yellow", "mango": "yellow/orange", "orange": "orange" }
+
+> const map3=map2.delete('banana');
+SortedMap { "apple": "red", "mango": "yellow/orange", "orange": "orange" }
+```
+
+Using a custom comparator:
+
+```js
+> const reverseCmp=(a,b)=>(a>b?-1:(a<b?1:0));
+
+> const map4=SortedMap(map1, reverseCmp);
+SortedMap { "orange": "orange", "banana": "yellow", "apple": "red" }
+
+> const map5=map4.set('mango', 'yellow/orange');
+SortedMap { "orange": "orange", "mango": "yellow/orange", "banana": "yellow", "apple": "red" }
+
+> const map6=map5.delete('banana');
+SortedMap { "orange": "orange", "mango": "yellow/orange", "apple": "red" }
+```
+
+When iterating a SortedMap, the order of entries is guaranteed to be the same as the sorted order of keys determined by a comparator.
+
+Map keys and values may be of any type. Equality of keys is determined by comparator returning 0 value. In case of a custom comparator the equality may be redefined to have a different meaning than Immutable.is.
+
+Many real use cases will be about storing the whole objects in SortedMap. That will usually be meaningful only when custom comparator is defined.
+
+Let's consider the following example with city objects as keys and their co-ordinates as values:
+
+```js
+> const { SortedMap, Seq, fromJS } = require('immutable-sorted');
+
+// Have an array of city objects
+> const cities=[
+   [{state: 'MA', city: 'Boston'}, ['42°21′N','71°04′W']],
+   [{city: 'Miami', state: 'FL'},['25°47′N','80°13′W']],
+   [{city: 'Seattle', state: 'WA'},['47°37′N','122°20′W']],
+   [{city: 'Phoenix', state: 'AZ'},['33°27′N','112°04′W']]];
+
+// Make a seq that converts cities and their co-ordinates from JS into immutable objects
+> const citiesSeq=Seq.Keyed(cities).mapKeys((v)=>fromJS(v)).map((v)=>fromJS(v));
+Seq {
+   Map { "state": "MA", "city": "Boston" }: List [ "42°21′N", "71°04′W" ],
+   Map { "city": "Miami", "state": "FL" }: List [ "25°47′N", "80°13′W" ],
+   Map { "city": "Seattle", "state": "WA" }: List [ "47°37′N", "122°20′W" ],
+   Map { "city": "Phoenix", "state": "AZ" }: List [ "33°27′N", "112°04′W" ] }
+
+// Create a default SortedMap
+> const map1=SortedMap(citiesSeq);
+SortedMap {
+   Map { "city": "Miami", "state": "FL" }: List [ "25°47′N", "80°13′W" ],
+   Map { "city": "Phoenix", "state": "AZ" }: List [ "33°27′N", "112°04′W" ],
+   Map { "city": "Seattle", "state": "WA" }: List [ "47°37′N", "122°20′W" ],
+   Map { "state": "MA", "city": "Boston" }: List [ "42°21′N", "71°04′W" ] }
+```
+
+When relying on defaultComparator, like in example above, the objects get sorted by their string representations from toString() method. This is usually not what the application designers want. In our case it makes more sense to sort by the city name, than the whole string representation.
+
+Let's create a custom comparator:
+
+```js
+// Define a general simple comparator
+> const cmp=(a,b)=>(a>b?1:(a<b?-1:0));
+
+// Define a comparator of city names
+> let citiesCmp=(a,b)=>cmp(a.get('city'), b.get('city'));
+
+// Create a SortedSet with custom comparator
+> const map2=SortedMap(citiesSeq, citiesCmp);
+SortedMap {
+   Map { "state": "MA", "city": "Boston" }: List [ "42°21′N", "71°04′W" ],
+   Map { "city": "Miami", "state": "FL" }: List [ "25°47′N", "80°13′W" ],
+   Map { "city": "Phoenix", "state": "AZ" }: List [ "33°27′N", "112°04′W" ],
+   Map { "city": "Seattle", "state": "WA" }: List [ "47°37′N", "122°20′W" ] }
+```
+
+The custom comparator that we have created seems to work as expected. Now let's add into the collection another city of Phoenix, this time from state Illinois.
+
+```js
+> const map3=map2.set(fromJS({city: 'Phoenix', state: 'IL'}), fromJS(['41°36′N','87°37′W']));
+SortedMap {
+   Map { "state": "MA", "city": "Boston" }: List [ "42°21′N", "71°04′W" ],
+   Map { "city": "Miami", "state": "FL" }: List [ "25°47′N", "80°13′W" ],
+   Map { "city": "Phoenix", "state": "IL" }: List [ "41°36′N", "87°37′W" ],
+   Map { "city": "Seattle", "state": "WA" }: List [ "47°37′N", "122°20′W" ] }
+```
+
+The Phoenix, AZ had been replaced with Phoenix, IL. This is because of the way the custom comparator is defined. It determines equality by comparing city names only, therefore Phoenix, AZ and Phoenix, IL are equal according to this comparator. Let's try to extend the comparator to compare the city name first and if they match then determine the result by comparing the state.
+
+```js
+// Define more complex custom comparator
+> citiesCmp=(a,b)=>cmp(a.get('city'), b.get('city'))||cmp(a.get('state'), b.get('state'));
+
+// Create a new SortedMap with new custom comparator
+> const map4=SortedMap(map2, citiesCmp);
+SortedMap {
+   Map { "state": "MA", "city": "Boston" }: List [ "42°21′N", "71°04′W" ],
+   Map { "city": "Miami", "state": "FL" }: List [ "25°47′N", "80°13′W" ],
+   Map { "city": "Phoenix", "state": "AZ" }: List [ "33°27′N", "112°04′W" ],
+   Map { "city": "Seattle", "state": "WA" }: List [ "47°37′N", "122°20′W" ] }
+
+// map4 looks the same as map2, now let's add the conflicting Phoenix, IL to map4
+> const map5=map4.set(fromJS({city: 'Phoenix', state: 'IL'}), fromJS(['41°36′N','87°37′W']));
+SortedMap {
+   Map { "state": "MA", "city": "Boston" }: List [ "42°21′N", "71°04′W" ],
+   Map { "city": "Miami", "state": "FL" }: List [ "25°47′N", "80°13′W" ],
+   Map { "city": "Phoenix", "state": "AZ" }: List [ "33°27′N", "112°04′W" ],
+   Map { "city": "Phoenix", "state": "IL" }: List [ "41°36′N", "87°37′W" ],
+   Map { "city": "Seattle", "state": "WA" }: List [ "47°37′N", "122°20′W" ] }
+```
+
+The custom comparator behaves as expected. Now let's swap the order of commands in the comparator and sort by state first and by city name second.
+
+```js
+> const stateCitiesCmp=(a,b)=>cmp(a.get('state'), b.get('state'))||cmp(a.get('city'), b.get('city'));
+
+> const map6=SortedMap(map5, stateCitiesCmp);
+SortedMap {
+   Map { "city": "Phoenix", "state": "AZ" }: List [ "33°27′N", "112°04′W" ],
+   Map { "city": "Miami", "state": "FL" }: List [ "25°47′N", "80°13′W" ],
+   Map { "city": "Phoenix", "state": "IL" }: List [ "41°36′N", "87°37′W" ],
+   Map { "state": "MA", "city": "Boston" }: List [ "42°21′N", "71°04′W" ],
+   Map { "city": "Seattle", "state": "WA" }: List [ "47°37′N", "122°20′W" ] }
+  ```
+
+Partial sort
+------------
+
+Any collection (including sequences) provides partialSort() and partialSortBy()
+function for efficiently sorting the first N items in the collections using
+Floyd-Rivest select algorithm.
+
+Example:
+```js
+> const { Seq } = require('immutable-sorted');
+
+> const seq1=Seq(['orange', 'apple', 'banana']);
+> seq1.partialSort(2)
+Seq [ "apple", "banana" ]
+```
 
 License
 -------
 
-Immutable.js is [MIT-licensed](https://github.com/facebook/immutable-js/blob/master/LICENSE).
+MIT License
+
+Original work Copyright (c) 2014-present, Facebook, Inc.
+
+Modified work Copyright (c) 2017, Applitopia, Inc.
