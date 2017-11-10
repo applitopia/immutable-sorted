@@ -78,6 +78,7 @@ import {
   flatMapFactory,
   interposeFactory,
   sortFactory,
+  partialSortFactory,
   maxFactory,
   zipWithFactory
 } from './Operations';
@@ -305,6 +306,10 @@ mixin(Collection, {
     return reify(this, sortFactory(this, comparator));
   },
 
+  partialSort(n, comparator) {
+    return reify(this, partialSortFactory(this, n, comparator));
+  },
+
   values() {
     return this.__iterator(ITERATE_VALUES);
   },
@@ -494,6 +499,10 @@ mixin(Collection, {
 
   sortBy(mapper, comparator) {
     return reify(this, sortFactory(this, comparator, mapper));
+  },
+
+  partialSortBy(n, mapper, comparator) {
+    return reify(this, partialSortFactory(this, n, comparator, mapper));
   },
 
   take(amount) {

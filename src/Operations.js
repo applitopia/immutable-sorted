@@ -48,6 +48,7 @@ import {
 
 import { Map } from './Map';
 import { OrderedMap } from './OrderedMap';
+import quickSelect from './utils/quickSelect';
 
 export class ToKeyedSequence extends KeyedSeq {
   constructor(indexed, useKeys) {
@@ -737,6 +738,34 @@ export function sortFactory(collection, comparator, mapper) {
     .valueSeq()
     .toArray();
   entries.sort((a, b) => comparator(a[3], b[3]) || a[2] - b[2]).forEach(
+    isKeyedCollection
+      ? (v, i) => {
+          entries[i].length = 2;
+        }
+      : (v, i) => {
+          entries[i] = v[1];
+        }
+  );
+  return isKeyedCollection
+    ? KeyedSeq(entries)
+    : isIndexed(collection) ? IndexedSeq(entries) : SetSeq(entries);
+}
+
+export function partialSortFactory(collection, n, comparator, mapper) {
+  if (!comparator) {
+    comparator = defaultComparator;
+  }
+  const isKeyedCollection = isKeyed(collection);
+  let index = 0;
+  let entries = collection
+    .toSeq()
+    .map((v, k) => [k, v, index++, mapper ? mapper(v, k, collection) : v])
+    .valueSeq()
+    .toArray();
+  const cmp = (a, b) => comparator(a[3], b[3]) || a[2] - b[2];
+  quickSelect(entries, n, cmp);
+  entries = entries.slice(0, n);
+  entries.sort(cmp).forEach(
     isKeyedCollection
       ? (v, i) => {
           entries[i].length = 2;

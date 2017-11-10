@@ -4804,6 +4804,41 @@ export module SortedMap {
     sort(comparator?: (valueA: V, valueB: V) => number): this;
 
     /**
+     * Returns a new Collection of the same type which includes the first N entries,
+     * stably sorted by using a `comparator`.
+     *
+     * If a `comparator` is not provided, a default comparator uses `<` and `>`.
+     *
+     * `comparator(valueA, valueB)`:
+     *
+     *   * Returns `0` if the elements should not be swapped.
+     *   * Returns `-1` (or any negative number) if `valueA` comes before `valueB`
+     *   * Returns `1` (or any positive number) if `valueA` comes after `valueB`
+     *   * Is pure, i.e. it must always return the same value for the same pair
+     *     of values.
+     *
+     * When sorting collections which have no defined order, their ordered
+     * equivalents will be returned. e.g. `map.partialSort()` returns OrderedMap.
+     *
+     * <!-- runkit:activate -->
+     * ```js
+     * const { Map } = require('immutable@4.0.0-rc.9')
+     * Map({ "c": 3, "a": 1, "b": 2 }).partialSort(2, (a, b) => {
+     *   if (a < b) { return -1; }
+     *   if (a > b) { return 1; }
+     *   if (a === b) { return 0; }
+     * });
+     * // OrderedMap { "a": 1, "b": 2 }
+     * ```
+     *
+     * Note: `partialSort()` Always returns a new instance, even if the original was
+     * already sorted.
+     *
+     * Note: This is always an eager operation.
+     */
+    partialSort(n: number, comparator?: (valueA: V, valueB: V) => number): this;
+
+    /**
      * Like `sort`, but also accepts a `comparatorValueMapper` which allows for
      * sorting by more sophisticated means:
      *
@@ -4815,6 +4850,23 @@ export module SortedMap {
      * Note: This is always an eager operation.
      */
     sortBy<C>(
+      comparatorValueMapper: (value: V, key: K, iter: this) => C,
+      comparator?: (valueA: C, valueB: C) => number
+    ): this;
+
+    /**
+     * Like `partialSort`, but also accepts a `comparatorValueMapper` which allows for
+     * sorting by more sophisticated means:
+     *
+     *     hitters.partialSortBy(10, hitter => hitter.avgHits)
+     *
+     * Note: `partialSortBy()` Always returns a new instance, even if the original was
+     * already sorted.
+     *
+     * Note: This is always an eager operation.
+     */
+    partialSortBy<C>(
+      n: number,
       comparatorValueMapper: (value: V, key: K, iter: this) => C,
       comparator?: (valueA: C, valueB: C) => number
     ): this;
