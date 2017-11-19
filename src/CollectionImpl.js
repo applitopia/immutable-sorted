@@ -79,6 +79,7 @@ import {
   interposeFactory,
   sortFactory,
   partialSortFactory,
+  incSortFactory,
   maxFactory,
   zipWithFactory
 } from './Operations';
@@ -310,6 +311,10 @@ mixin(Collection, {
     return reify(this, partialSortFactory(this, n, comparator));
   },
 
+  incSort(comparator) {
+    return reify(this, incSortFactory(this, comparator, null, true));
+  },
+
   values() {
     return this.__iterator(ITERATE_VALUES);
   },
@@ -503,6 +508,10 @@ mixin(Collection, {
 
   partialSortBy(n, mapper, comparator) {
     return reify(this, partialSortFactory(this, n, comparator, mapper));
+  },
+
+  incSortBy(mapper, comparator) {
+    return reify(this, incSortFactory(this, comparator, mapper, true));
   },
 
   take(amount) {
@@ -700,6 +709,14 @@ mixin(IndexedCollection, {
 
   skipWhile(predicate, context) {
     return reify(this, skipWhileFactory(this, predicate, context, false));
+  },
+
+  incSort(comparator) {
+    return reify(this, incSortFactory(this, comparator, null, false));
+  },
+
+  incSortBy(mapper, comparator) {
+    return reify(this, incSortFactory(this, comparator, mapper, false));
   },
 
   zip(/*, ...collections */) {

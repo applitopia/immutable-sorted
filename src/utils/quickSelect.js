@@ -19,7 +19,12 @@ const swap = (array, i, j) => {
 const sampleThreshold = 1000;
 const sampleReach = 0.5;
 
-const quickSelectRange = (array, left, right, k, comparator) => {
+// partition the elements between inclusive left and right around t
+export const quickSelectRange = (array, left, right, k, comparator) => {
+  // k is outside of range, no need to sort out anything
+  if (k < left || k > right) {
+    return;
+  }
   while (right > left) {
     // use select recursively to sample a smaller set of size s
     // the arbitrary constants 600 and 0.5 are used in the original
@@ -35,7 +40,6 @@ const quickSelectRange = (array, left, right, k, comparator) => {
       quickSelectRange(array, newLeft, newRight, k, comparator);
     }
 
-    // partition the elements between left and right around t
     const t = array[k];
     let i = left;
     let j = right;
@@ -68,7 +72,7 @@ const quickSelectRange = (array, left, right, k, comparator) => {
   }
 };
 
-const quickSelect = (array, k, comparator) => {
+export const quickSelect = (array, k, comparator) => {
   if (!comparator) {
     comparator = (a, b) => (a > b ? 1 : a < b ? -1 : 0);
   }

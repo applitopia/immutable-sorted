@@ -48,7 +48,7 @@ import {
 
 import { Map } from './Map';
 import { OrderedMap } from './OrderedMap';
-import quickSelect from './utils/quickSelect';
+import { quickSelect, quickSelectRange } from './utils/quickSelect';
 
 export class ToKeyedSequence extends KeyedSeq {
   constructor(indexed, useKeys) {
@@ -777,6 +777,112 @@ export function partialSortFactory(collection, n, comparator, mapper) {
   return isKeyedCollection
     ? KeyedSeq(entries)
     : isIndexed(collection) ? IndexedSeq(entries) : SetSeq(entries);
+}
+
+export function incSortFactory(collection, comparator, mapper, useKeys) {
+  if (!comparator) {
+    comparator = defaultComparator;
+  }
+
+  let index = 0;
+  const entriesSeq = collection
+    .toSeq()
+    .map((v, k) => [k, v, index++, mapper ? mapper(v, k, collection) : v])
+    .valueSeq();
+
+  const sequence = makeSequence(collection);
+  sequence.__iterateUncached = function(fn, reverse) {
+    const entries = entriesSeq.toArray();
+    const rcmp = reverse ? (a, b) => comparator(b, a) : comparator;
+    const cmp = (a, b) => rcmp(a[3], b[3]) || a[2] - b[2];
+
+    let nextn = entries.length >> 10;
+    nextn = Math.min(entries.length, 10);
+
+    let from = 0;
+    let to = -1;
+    let n = 0;
+    let i = 0;
+    let sortedEntries;
+
+    function nextBatch() {
+      from = to + 1;
+      to = Math.min(to + nextn, entries.length - 1);
+      n = to - from + 1;
+      i = 0;
+      nextn <<= 2;
+
+      quickSelectRange(entries, from, entries.length - 1, to, cmp);
+      sortedEntries = entries.slice(from, to + 1);
+      sortedEntries.sort(cmp).forEach((v, i) => {
+        sortedEntries[i].length = 2;
+      });
+    }
+
+    function nextEntry() {
+      if (i >= n) {
+        nextBatch();
+      }
+      return sortedEntries[i++];
+    }
+
+    let iterations = 0;
+    while (iterations < entries.length) {
+      const entry = nextEntry();
+      if (fn(entry[1], useKeys ? entry[0] : iterations, this) === false) {
+        break;
+      }
+      iterations++;
+    }
+    return iterations;
+  };
+
+  sequence.__iteratorUncached = function(type, reverse) {
+    const entries = entriesSeq.toArray();
+    const rcmp = reverse ? (a, b) => comparator(b, a) : comparator;
+    const cmp = (a, b) => rcmp(a[3], b[3]) || a[2] - b[2];
+
+    let nextn = entries.length >> 10;
+    nextn = Math.min(entries.length, 10);
+
+    let from = 0;
+    let to = -1;
+    let n = 0;
+    let i = 0;
+    let sortedEntries;
+
+    function nextBatch() {
+      from = to + 1;
+      to = Math.min(to + nextn, entries.length - 1);
+      n = to - from + 1;
+      i = 0;
+      nextn <<= 2;
+
+      quickSelectRange(entries, from, entries.length - 1, to, cmp);
+      sortedEntries = entries.slice(from, to + 1);
+      sortedEntries.sort(cmp).forEach((v, i) => {
+        sortedEntries[i].length = 2;
+      });
+    }
+
+    function nextEntry() {
+      if (i >= n) {
+        nextBatch();
+      }
+      return sortedEntries[i++];
+    }
+
+    let iterations = 0;
+    return new Iterator(() => {
+      if (iterations >= entries.length) {
+        return iteratorDone();
+      }
+      iterations++;
+      const entry = nextEntry(cmp);
+      return iteratorValue(type, useKeys ? entry[0] : iterations, entry[1]);
+    });
+  };
+  return sequence;
 }
 
 export function maxFactory(collection, comparator, mapper) {
