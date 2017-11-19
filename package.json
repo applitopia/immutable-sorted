@@ -1,19 +1,15 @@
 {
-  "name": "immutable",
-  "version": "4.0.0-rc.9",
-  "description": "Immutable Data Collections",
+  "name": "immutable-sorted",
+  "version": "0.2.4",
+  "description": "Immutable Sorted Data Collections",
   "license": "MIT",
-  "homepage": "https://facebook.github.com/immutable-js",
-  "author": {
-    "name": "Lee Byron",
-    "url": "https://github.com/leebyron"
-  },
+  "homepage": "https://applitopia.github.io/immutable-sorted",
   "repository": {
     "type": "git",
-    "url": "git://github.com/facebook/immutable-js.git"
+    "url": "git://github.com/applitopia/immutable-sorted.git"
   },
   "bugs": {
-    "url": "https://github.com/facebook/immutable-js/issues"
+    "url": "https://github.com/applitopia/immutable-sorted/issues"
   },
   "main": "dist/immutable.js",
   "module": "dist/immutable.es.js",
@@ -41,7 +37,7 @@
     "test:types:flow": "flow check type-definitions/tests --include-warnings",
     "perf": "node ./resources/bench.js",
     "start": "gulp --gulpfile gulpfile.js dev",
-    "deploy": "./resources/deploy-ghpages.sh",
+    "deploy": "./resources/apia-deploy-ghpages.sh",
     "gitpublish": "./resources/gitpublish.sh"
   },
   "jest": {
@@ -115,6 +111,11 @@
   ],
   "keywords": [
     "immutable",
+    "sorted",
+    "sort",
+    "partial sort",
+    "incremental sort",
+    "Floyd-Rivest",
     "persistent",
     "lazy",
     "data",
