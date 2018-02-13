@@ -309,4 +309,12 @@ describe('SortedSet', () => {
     expect(set.count(x => true)).toEqual(5);
   });
 
+  it('works with the `new` operator #3', () => {
+      const s = new SortedSet([1, 2, 3]);
+      expect(s.has(1)).toBe(true);
+      expect(s.has(2)).toBe(true);
+      expect(s.has(3)).toBe(true);
+      expect(s.has(4)).toBe(false);
+  });
+
 });
