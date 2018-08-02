@@ -1691,6 +1691,40 @@ export module SortedMap {
     // Reading values
 
     /**
+     * Returns a sequence representing a portion of this sorted map starting with a specific key 
+     * up to the last entry in the sorted  map.
+     * If the optional parameter backwards is set to true, the returned sequence will
+     * list the entries backwards, starting with key down to the first entry in the sorted map,
+
+     * Example:
+     * ```js
+     * > const abc = SortedMap([["A", "a"], ["B", "b"], ["C", "c"], ["D", "d"], ["E", "e"], ["F", "f"], ["G", "g"], ["H", "h"], ["I", "i"], ["J", "j"], ["K", "k"], ["L", "l"], ["M", "m"], ["N", "n"], ["O", "o"], ["P", "p"], ["Q", "q"], ["R", "r"], ["S", "s"], ["T", "t"], ["U", "u"], ["V", "v"], ["W", "w"], ["X", "x"], ["Y", "y"], ["Z", "z"]]);
+     * 
+     * > abc.from("R");
+     * Seq { "R": "r", "S": "s", "T": "t", "U": "u", "V": "v", "W": "w", "X": "x", "Y": "y", "Z": "z" }
+     * 
+     * > abc.from("R", true);
+     * Seq { "R": "r", "Q": "q", "P": "p", "O": "o", "N": "n", "M": "m", "L": "l", "K": "k", "J": "j", "I": "i", "H": "h", "G": "g", "F": "f", "E": "e", "D": "d", "C": "c", "B": "b", "A": "a" }
+     * ```
+     * 
+     * The method from() can be efficiently combined with take() to retrieve the desired number of values or with takeWhile() to retrieve a specific range:
+     * ```js
+     * > abc.from("R").take(5);
+     * Seq { "R": "r", "S": "s", "T": "t", "U": "u", "V": "v" }
+     * 
+     * > abc.from("R").takeWhile((v, k) => k < "W");
+     * Seq { "R": "r", "S": "s", "T": "t", "U": "u", "V": "v" }
+     * 
+     * > abc.from("R", true).take(5);
+     * Seq { "R": "r", "Q": "q", "P": "p", "O": "o", "N": "n" }
+     * 
+     * > abc.from("R", true).takeWhile((v, k) => k > "K");
+     * Seq { "R": "r", "Q": "q", "P": "p", "O": "o", "N": "n", "M": "m", "L": "l" }
+     * ```
+     */
+    from(key: K, backwards?: boolean): Seq<K, V>;
+
+    /**
      * Prints out the internal Btree structure of the SortedMap.
      * Keeps printing the nodes recursively until `maxDepth` level is reached.
      *
@@ -2396,6 +2430,42 @@ export module SortedMap {
      */
     pack(collection?: Iterable<T>): this;
 
+    /**
+     * Returns a sequence representing a subset of this sorted set starting with value 
+     * up to the last element in the set.
+     * 
+     * If the optional parameter backwards is set to true, the returned sequence will
+     * list the entries backwards, starting with value down to the first element in the set.
+     * 
+     * Example:
+     * ```js
+     * const { SortedSet } = require('immutable-sorted');
+     * 
+     * const abc = SortedSet(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]);
+     * 
+     * > abc.from("R");
+     * Seq { "R", "S", "T", "U", "V", "W", "X", "Y", "Z" }
+     * 
+     * > abc.from("R", true);
+     * Seq { "R", "Q", "P", "O", "N", "M", "L", "K", "J", "I", "H", "G", "F", "E", "D", "C", "B", "A" }
+     * ```
+     * 
+     * The method from() can be efficiently combined with take() to retrieve the desired number of values or with takeWhile() to retrieve a specific range:
+     * ```js
+     * > abc.from("R").take(5);
+     * Seq { "R", "S", "T", "U", "V" }
+     * 
+     * > abc.from("R").takeWhile(s => s < "W");
+     * Seq { "R", "S", "T", "U", "V" }
+     *
+     * > abc.from("R", true).take(5);
+     * Seq { "R", "Q", "P", "O", "N" }
+     * 
+     * > abc.from("R", true).takeWhile(s => s > "K");
+     * Seq { "R", "Q", "P", "O", "N", "M", "L" }
+     * ```
+     */
+    from(value: T, backwards?: boolean): Seq<T>;
   }
 
   /**

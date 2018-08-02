@@ -249,6 +249,41 @@ export class SortedMap extends Map {
     }
     return this;
   }
+
+  from(key, backwards) {
+    const self = this;
+    const sequence = Object.create(KeyedSeq).prototype;
+    sequence.__iterateUncached = function(fn, reverse) {
+      if (!self._root) {
+        return 0;
+      }
+
+      let iterations = 0;
+      if (backwards) {
+        self._root.iterateFromBackwards(
+          key,
+          entry => {
+            iterations++;
+            return fn(entry[1], entry[0], this);
+          },
+          reverse
+        );
+      } else {
+        self._root.iterateFrom(
+          key,
+          entry => {
+            iterations++;
+            return fn(entry[1], entry[0], this);
+          },
+          reverse
+        );
+      }
+
+      return iterations;
+    };
+
+    return sequence;
+  }
 }
 
 function isSortedMap(maybeSortedMap) {

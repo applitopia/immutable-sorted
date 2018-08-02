@@ -389,4 +389,42 @@ describe('SortedMap', () => {
     expect(map.toString()).toEqual('SortedMap { 2: 2 }');
   });
 
+  it('builds correct seq in function from', () => {
+    const size = 10000;
+    const data = Range(0, size).map(v => [v, 2 * v]);
+    const s = new SortedMap(data, undefined, {type: 'btree', btreeOrder: 3});
+
+    expect(s.toSeq().size).toBe(size);
+
+    for (let n = 10; n < 100; n += 13) {
+      for (let i = 0; i < size; i += 17) {
+        const limit = i + n < size ? i + n : size;
+        const seq = s.from(i).takeWhile((v, k) => k < limit);
+        const l1 = seq.keySeq().toList();
+        const l2 = Range(i, limit).toList();
+        expect(is(l1, l2)).toEqual(true);
+      }
+    }
+  });
+
+  it('builds correct seq in function from backwards', () => {
+    const size = 10000;
+    const data = Range(0, size).map(v => [v, 2 * v]);
+    const s = new SortedMap(data, undefined, {type: 'btree', btreeOrder: 3});
+
+    expect(s.toSeq().size).toBe(size);
+
+    for (let n = 10; n < 100; n += 13) {
+      for (let i = 0; i < size; i += 17) {
+        const limit = i + 1 >= n ? i + 1 - n : 0;
+        const seq = s.from(i, true).takeWhile((v, k) => k >= limit);
+        const l1 = seq.keySeq().toList();
+        const l2 = Range(i, limit - 1, -1).toList();
+        // tslint:disable-next-line:no-console
+        // console.log(l1, l2);
+        expect(is(l1, l2)).toEqual(true);
+      }
+    }
+  });
+
 });

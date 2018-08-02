@@ -12,7 +12,7 @@ operations implemented using [Floyd-Rivest](https://en.wikipedia.org/wiki/Floyd%
 Version
 -------
 
-The current version [immutable-sorted@0.2.4](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.4) is an extension of [immutable-js@4.0.0-rc.9](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.9).
+The current version [immutable-sorted@0.2.6](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.4) is an extension of [immutable-js@4.0.0-rc.9](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.9).
 
 
 Installation
@@ -58,9 +58,51 @@ SortedSet { "orange", "mango", "banana", "apple" }
 SortedSet { "orange", "mango", "apple" }
 ```
 
-When iterating a SortedSet, the entries will be (value, value) pairs. Iteration order of a SortedSet is determined by a comparator.
-
 Set values, like Map keys, may be of any type. Equality is determined by comparator returning 0 value. In case of a custom comparator the equality may be redefined to have a different meaning than Immutable.is.
+
+**Searching SortedSet**
+
+Many real applications require ability to efficiently search in a sorted dataset. The method:
+
+```js
+from(value, backwards) 
+```
+
+returns a sequence that represents a subset of a sorted set starting with value 
+up to the last element in the set.
+
+If the optional parameter backwards is set to true, the returned sequence will
+list the entries backwards, starting with value down to the first element in the set.
+
+Example:
+```js
+const { SortedSet } = require('immutable-sorted');
+
+const abc = SortedSet(["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]);
+
+> abc.from("R");
+Seq { "R", "S", "T", "U", "V", "W", "X", "Y", "Z" }
+
+> abc.from("R", true);
+Seq { "R", "Q", "P", "O", "N", "M", "L", "K", "J", "I", "H", "G", "F", "E", "D", "C", "B", "A" }
+```
+
+The method from() can be efficiently combined with take() to retrieve the desired number of values or with takeWhile() to retrieve a specific range:
+```js
+> abc.from("R").take(5);
+Seq { "R", "S", "T", "U", "V" }
+
+> abc.from("R").takeWhile(s => s < "W");
+Seq { "R", "S", "T", "U", "V" }
+
+> abc.from("R", true).take(5);
+Seq { "R", "Q", "P", "O", "N" }
+
+> abc.from("R", true).takeWhile(s => s > "K");
+Seq { "R", "Q", "P", "O", "N", "M", "L" }
+```
+
+**Working with objects**
 
 Many real use cases will be about storing the whole objects in SortedSet. That will usually be meaningful only when custom comparator is defined.
 
@@ -196,6 +238,46 @@ SortedMap { "orange": "orange", "mango": "yellow/orange", "apple": "red" }
 When iterating a SortedMap, the order of entries is guaranteed to be the same as the sorted order of keys determined by a comparator.
 
 Map keys and values may be of any type. Equality of keys is determined by comparator returning 0 value. In case of a custom comparator the equality may be redefined to have a different meaning than Immutable.is.
+
+**Searching SortedMap**
+
+Many real applications require ability to efficiently search in a sorted data structure. The method:
+
+```js
+from(key, backwards)
+```
+
+returns a sequence that represents a portion of this sorted map starting with a specific key up to the last entry in the sorted  map.
+
+If the optional parameter backwards is set to true, the returned sequence will list the entries backwards, starting with key down to the first entry in the sorted map.
+
+Example:
+```js
+> const abc = SortedMap([["A", "a"], ["B", "b"], ["C", "c"], ["D", "d"], ["E", "e"], ["F", "f"], ["G", "g"], ["H", "h"], ["I", "i"], ["J", "j"], ["K", "k"], ["L", "l"], ["M", "m"], ["N", "n"], ["O", "o"], ["P", "p"], ["Q", "q"], ["R", "r"], ["S", "s"], ["T", "t"], ["U", "u"], ["V", "v"], ["W", "w"], ["X", "x"], ["Y", "y"], ["Z", "z"]]);
+ 
+> abc.from("R");
+Seq { "R": "r", "S": "s", "T": "t", "U": "u", "V": "v", "W": "w", "X": "x", "Y": "y", "Z": "z" }
+ 
+> abc.from("R", true);
+Seq { "R": "r", "Q": "q", "P": "p", "O": "o", "N": "n", "M": "m", "L": "l", "K": "k", "J": "j", "I": "i", "H": "h", "G": "g", "F": "f", "E": "e", "D": "d", "C": "c", "B": "b", "A": "a" }
+```
+
+The method from() can be efficiently combined with take() to retrieve the desired number of values or with takeWhile() to retrieve a specific range:
+```js
+> abc.from("R").take(5);
+Seq { "R": "r", "S": "s", "T": "t", "U": "u", "V": "v" }
+
+> abc.from("R").takeWhile((v, k) => k < "W");
+Seq { "R": "r", "S": "s", "T": "t", "U": "u", "V": "v" }
+ 
+> abc.from("R", true).take(5);
+Seq { "R": "r", "Q": "q", "P": "p", "O": "o", "N": "n" }
+ 
+> abc.from("R", true).takeWhile((v, k) => k > "K");
+Seq { "R": "r", "Q": "q", "P": "p", "O": "o", "N": "n", "M": "m", "L": "l" }
+```
+
+**Working with objects**
 
 Many real use cases will be about storing the whole objects in SortedMap. That will usually be meaningful only when custom comparator is defined.
 
@@ -335,6 +417,6 @@ License
 
 MIT License
 
-Modified work Copyright (c) 2017, Applitopia, Inc.
+Modified work Copyright (c) 2017-2018, Applitopia, Inc.
 
 Original work Copyright (c) 2014-present, Facebook, Inc.

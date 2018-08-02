@@ -83,6 +83,10 @@ export class SortedSet extends Set {
     return updateSortedSet(this, this._map.pack(seq));
   }
 
+  from(value, backwards) {
+    return this._map.from(value, backwards).toSetSeq();
+  }
+
   sort(comparator) {
     // Late binding
     return SortedSet(this, comparator, this.getOptions());

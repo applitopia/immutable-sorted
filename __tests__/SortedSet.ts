@@ -15,7 +15,7 @@
 ///<reference path='../resources/jest.d.ts'/>
 
 declare var Symbol: any;
-import { is, List, Map, OrderedSet, Seq, Set, SortedMap, SortedSet } from '../';
+import { is, List, Map, OrderedSet, Range, Seq, Set, SortedMap, SortedSet } from '../';
 
 declare function expect(val: any): ExpectWithIs;
 
@@ -310,11 +310,49 @@ describe('SortedSet', () => {
   });
 
   it('works with the `new` operator #3', () => {
-      const s = new SortedSet([1, 2, 3]);
-      expect(s.has(1)).toBe(true);
-      expect(s.has(2)).toBe(true);
-      expect(s.has(3)).toBe(true);
-      expect(s.has(4)).toBe(false);
+    const s = new SortedSet([1, 2, 3]);
+    expect(s.has(1)).toBe(true);
+    expect(s.has(2)).toBe(true);
+    expect(s.has(3)).toBe(true);
+    expect(s.has(4)).toBe(false);
+  });
+
+  it('builds correct seq in function from', () => {
+    const size = 10000;
+    const data = Range(0, size);
+    const s = new SortedSet(data, undefined, {type: 'btree', btreeOrder: 3});
+
+    expect(s.toSeq().size).toBe(size);
+
+    for (let n = 10; n < 100; n += 13) {
+      for (let i = 0; i < size; i += 17) {
+        const limit = i + n < size ? i + n : size;
+        const seq = s.from(i).takeWhile(k => k < limit);
+        const l1 = seq.toList();
+        const l2 = Range(i, limit).toList();
+        expect(is(l1, l2)).toEqual(true);
+      }
+    }
+  });
+
+  it('builds correct seq in function from backwards', () => {
+    const size = 10000;
+    const data = Range(0, size);
+    const s = new SortedSet(data, undefined, {type: 'btree', btreeOrder: 3});
+
+    expect(s.toSeq().size).toBe(size);
+
+    for (let n = 10; n < 100; n += 13) {
+      for (let i = 0; i < size; i += 17) {
+        const limit = i + 1 >= n ? i + 1 - n : 0;
+        const seq = s.from(i, true).takeWhile(k => k >= limit);
+        const l1 = seq.toList();
+        const l2 = Range(i, limit - 1, -1).toList();
+        // tslint:disable-next-line:no-console
+        // console.log(l1, l2);
+        expect(is(l1, l2)).toEqual(true);
+      }
+    }
   });
 
 });

@@ -653,6 +653,121 @@ SortedMapBtreeNode.prototype.iterate = function(fn, reverse) {
       }
     }
   }
+  return true;
+};
+
+SortedMapBtreeNode.prototype.iterateFrom = function(from, fn, reverse) {
+  if (reverse) {
+    return this.iterate(entry => {
+      if (this.comparator(from, entry[0]) <= 0) {
+        return fn(entry);
+      }
+      return true;
+    }, reverse);
+  }
+
+  const entries = this.entries;
+  const nodes = this.nodes;
+
+  const didMatch = MakeRef(DID_MATCH);
+  const idx = binarySearch(this.comparator, entries, from, didMatch);
+
+  if (nodes) {
+    for (let ii = idx, maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
+      const node = nodes[ii];
+      if (ii === idx && !GetRef(didMatch)) {
+        if (node.iterateFrom(from, fn, reverse) === false) {
+          return false;
+        }
+      } else if (ii > idx) {
+        if (node.iterate(fn, reverse) === false) {
+          return false;
+        }
+      }
+      const entry = entries[ii];
+      if (entry[1] === NOT_SET) {
+        continue;
+      }
+      if (fn(entry) === false) {
+        return false;
+      }
+    }
+
+    // Iterate through the remaining last node
+    const node = nodes[nodes.length - 1];
+    if (idx === nodes.length - 1) {
+      if (node.iterateFrom(from, fn, reverse) === false) {
+        return false;
+      }
+    } else if (node.iterate(fn, reverse) === false) {
+      return false;
+    }
+  } else {
+    for (let ii = idx, maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
+      const entry = entries[ii];
+      if (entry[1] === NOT_SET) {
+        continue;
+      }
+      if (fn(entry) === false) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
+SortedMapBtreeNode.prototype.iterateFromBackwards = function(
+  from,
+  fn,
+  reverse
+) {
+  if (reverse) {
+    return this.iterate(entry => {
+      if (this.comparator(entry[0], from) <= 0) {
+        return fn(entry);
+      }
+      return true;
+    }, false);
+  }
+
+  const entries = this.entries;
+  const nodes = this.nodes;
+
+  const didMatch = MakeRef(DID_MATCH);
+  const idx = binarySearch(this.comparator, entries, from, didMatch);
+
+  if (nodes) {
+    for (let ii = idx; ii >= 0; ii--) {
+      if (ii < idx || GetRef(didMatch)) {
+        const entry = entries[ii];
+        if (entry[1] === NOT_SET) {
+          continue;
+        }
+        if (fn(entry) === false) {
+          return false;
+        }
+      }
+      const node = nodes[ii];
+      if (ii === idx && !GetRef(didMatch)) {
+        if (node.iterateFromBackwards(from, fn, reverse) === false) {
+          return false;
+        }
+      } else if (node.iterate(fn, true) === false) {
+        return false;
+      }
+    }
+  } else {
+    for (let ii = GetRef(didMatch) ? idx : idx - 1; ii >= 0; ii--) {
+      const entry = entries[ii];
+      if (entry[1] === NOT_SET) {
+        continue;
+      }
+      if (fn(entry) === false) {
+        return false;
+      }
+    }
+  }
+  return true;
 };
 
 class SortedMapBtreeNodeIterator extends Iterator {
