@@ -146,6 +146,10 @@ class SortedMapBtreeNode extends SortedMapNode {
         const entry = [key, value];
 
         SetRef(didAlter);
+        // Updating previously REMOVED ENTRY
+        if (entries[idx][1] === NOT_SET) {
+          SetRef(didChangeSize);
+        }
         newEntries = setIn(entries, idx, entry, canEdit);
         newNodes = nodes;
       }
