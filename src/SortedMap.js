@@ -14,18 +14,12 @@
 
 import { is } from './is';
 import { KeyedCollection } from './Collection';
-import { IS_SORTED_SENTINEL, isSorted } from './Predicates';
-import {
-  DELETE,
-  NOT_SET,
-  CHANGE_LENGTH,
-  DID_ALTER,
-  MakeRef,
-  GetRef
-} from './TrieUtils';
+import { IS_SORTED_SYMBOL, isSorted } from './predicates/isSorted';
+import { DELETE, NOT_SET, MakeRef, GetRef } from './TrieUtils';
 import assertNotInfinite from './utils/assertNotInfinite';
 import { sortFactory } from './Operations';
-import { Map, isMap } from './Map';
+import { Map } from './Map';
+import { isMap } from './predicates/isMap';
 import { KeyedSeq } from './Seq';
 import { SortedMapBtreeNodeFactory } from './SortedMapBtreeNode';
 
@@ -294,11 +288,11 @@ SortedMap.isSortedMap = isSortedMap;
 
 SortedMap.defaultComparator = defaultComparator;
 SortedMap.defaultOptions = {
-  type: 'btree'
+  type: 'btree',
 };
 
 export const SortedMapPrototype = SortedMap.prototype;
-SortedMapPrototype[IS_SORTED_SENTINEL] = true;
+SortedMapPrototype[IS_SORTED_SYMBOL] = true;
 SortedMapPrototype[DELETE] = SortedMapPrototype.remove;
 SortedMapPrototype.removeIn = SortedMapPrototype.deleteIn;
 SortedMapPrototype.removeAll = SortedMapPrototype.deleteAll;
@@ -363,8 +357,8 @@ function updateMap(map, k, v, fast) {
       entries
     );
   } else {
-    const didChangeSize = MakeRef(CHANGE_LENGTH);
-    const didAlter = MakeRef(DID_ALTER);
+    const didChangeSize = MakeRef();
+    const didAlter = MakeRef();
 
     if (remove) {
       if (fast) {
@@ -472,5 +466,5 @@ SortedMap.getFactory = function(options) {
 };
 
 SortedMap.factories = {
-  btree: new SortedMapBtreeNodeFactory()
+  btree: new SortedMapBtreeNodeFactory(),
 };

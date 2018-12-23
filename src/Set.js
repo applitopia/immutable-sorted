@@ -7,6 +7,7 @@
 
 import { Collection, SetCollection, KeyedCollection } from './Collection';
 import { isOrdered } from './predicates/isOrdered';
+import { isSorted } from './predicates/isSorted';
 import { IS_SET_SYMBOL, isSet } from './predicates/isSet';
 import { emptyMap } from './Map';
 import { DELETE } from './TrieUtils';
@@ -23,7 +24,7 @@ export class Set extends SetCollection {
   constructor(value) {
     return value === null || value === undefined
       ? emptySet()
-      : isSet(value) && !isOrdered(value)
+      : isSet(value) && !isOrdered(value) && !isSorted(value)
         ? value
         : emptySet().withMutations(set => {
             const iter = SetCollection(value);
@@ -213,9 +214,7 @@ function updateSet(set, newMap) {
   }
   return newMap === set._map
     ? set
-    : newMap.size === 0
-      ? set.__empty()
-      : set.__make(newMap);
+    : newMap.size === 0 ? set.__empty() : set.__make(newMap);
 }
 
 function makeSet(map, ownerID) {

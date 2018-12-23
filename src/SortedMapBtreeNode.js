@@ -14,12 +14,12 @@
 
 /* eslint-disable no-else-return */
 
-import { NOT_SET, DID_MATCH, MakeRef, SetRef, GetRef } from './TrieUtils';
+import { NOT_SET, MakeRef, SetRef, GetRef } from './TrieUtils';
 import { Iterator, iteratorValue, iteratorDone } from './Iterator';
 import {
   SortedMapNode,
   SortedMapPacker,
-  SortedMapNodeFactory
+  SortedMapNodeFactory,
 } from './SortedMapNode';
 import { KeyedCollection } from './Collection';
 import assertNotInfinite from './utils/assertNotInfinite';
@@ -48,7 +48,7 @@ class SortedMapBtreeNode extends SortedMapNode {
 
   get(key, notSetValue) {
     const entries = this.entries;
-    const didMatch = MakeRef(DID_MATCH);
+    const didMatch = MakeRef();
     const idx = binarySearch(this.comparator, entries, key, didMatch);
     if (GetRef(didMatch)) {
       const value = entries[idx][1];
@@ -122,7 +122,7 @@ class SortedMapBtreeNode extends SortedMapNode {
     const entries = this.entries;
 
     // Search keys
-    const didMatch = MakeRef(DID_MATCH);
+    const didMatch = MakeRef();
     const idx = binarySearch(this.comparator, entries, key, didMatch);
     const exists = GetRef(didMatch);
 
@@ -235,7 +235,7 @@ class SortedMapBtreeNode extends SortedMapNode {
     const entries = this.entries;
 
     // Search keys
-    const didMatch = MakeRef(DID_MATCH);
+    const didMatch = MakeRef();
     const idx = binarySearch(this.comparator, entries, key, didMatch);
     const exists = GetRef(didMatch);
 
@@ -303,7 +303,7 @@ class SortedMapBtreeNode extends SortedMapNode {
     const entries = this.entries;
 
     // Search keys
-    const didMatch = MakeRef(DID_MATCH);
+    const didMatch = MakeRef();
     const idx = binarySearch(this.comparator, entries, key, didMatch);
     const exists = GetRef(didMatch);
 
@@ -673,7 +673,7 @@ SortedMapBtreeNode.prototype.iterateFrom = function(from, fn, reverse) {
   const entries = this.entries;
   const nodes = this.nodes;
 
-  const didMatch = MakeRef(DID_MATCH);
+  const didMatch = MakeRef();
   const idx = binarySearch(this.comparator, entries, from, didMatch);
 
   if (nodes) {
@@ -737,7 +737,7 @@ SortedMapBtreeNode.prototype.iterateFromBackwards = function(
   const entries = this.entries;
   const nodes = this.nodes;
 
-  const didMatch = MakeRef(DID_MATCH);
+  const didMatch = MakeRef();
   const idx = binarySearch(this.comparator, entries, from, didMatch);
 
   if (nodes) {
@@ -835,7 +835,7 @@ function mapIteratorFrame(node, prev) {
   return {
     node: node,
     index: 0,
-    __prev: prev
+    __prev: prev,
   };
 }
 
@@ -1898,7 +1898,7 @@ class SortedMapBtreeNodePacker extends SortedMapPacker {
         height: height,
         order: order,
         repeat: 1,
-        total: n
+        total: n,
       };
     }
 
@@ -1909,7 +1909,7 @@ class SortedMapBtreeNodePacker extends SortedMapPacker {
         height: height,
         order: order,
         repeat: 1,
-        total: n
+        total: n,
       };
     }
 
@@ -1939,14 +1939,14 @@ class SortedMapBtreeNodePacker extends SortedMapPacker {
         height: height - 1,
         order: order,
         repeat: rootOrder,
-        total: total
+        total: total,
       });
       return {
         op: 'assemble',
         height: height,
         order: order,
         total: total,
-        items: repPlan
+        items: repPlan,
       };
     }
 
@@ -1962,7 +1962,7 @@ class SortedMapBtreeNodePacker extends SortedMapPacker {
         height: height - 1,
         order: order,
         repeat: repeat,
-        total: total
+        total: total,
       };
       plan.push(build);
       n -= total;
@@ -1991,7 +1991,7 @@ class SortedMapBtreeNodePacker extends SortedMapPacker {
       height: height,
       order: order,
       total: total,
-      items: plan
+      items: plan,
     };
   }
 

@@ -2504,7 +2504,7 @@ export module SortedMap {
      * Seq { "R", "Q", "P", "O", "N", "M", "L" }
      * ```
      */
-    from(value: T, backwards?: boolean): Seq<T>;
+    from(value: T, backwards?: boolean): Seq.Set<T>;
   }
 
   /**

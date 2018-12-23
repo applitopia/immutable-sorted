@@ -22,9 +22,7 @@ export class Stack extends IndexedCollection {
   constructor(value) {
     return value === null || value === undefined
       ? emptyStack()
-      : isStack(value)
-        ? value
-        : emptyStack().pushAll(value);
+      : isStack(value) ? value : emptyStack().pushAll(value);
   }
 
   static of(/*...values*/) {

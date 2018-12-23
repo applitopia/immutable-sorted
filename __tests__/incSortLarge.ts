@@ -15,7 +15,6 @@
 import { Range, Seq } from '../';
 
 describe('incSortLarge', () => {
-
   const verify = function(seq) {
     let i = 0;
     seq.forEach((v, k) => {
@@ -60,26 +59,27 @@ describe('incSortLarge', () => {
       const r = Range(n - 1, -1, -2).concat(Range(n % 2, n, 2));
       for (let limit = 1; limit <= n; limit += 7) {
         // step("Regular sort", n, limit, () => r.sort());
-        step("Partial sort", n, limit, () => r.partialSort(limit));
-        step("Incremental sort", n, limit, () => r.incSort());
+        step('Partial sort', n, limit, () => r.partialSort(limit));
+        step('Incremental sort', n, limit, () => r.incSort());
       }
     }
   });
 
   it('sorts large ranges', () => {
     for (let n = 1; n < 1000; n += 93) {
-      const r = Range(n - 1, -1, -2).concat(Range(n % 2, n, 2)).toIndexedSeq();
+      const r = Range(n - 1, -1, -2)
+        .concat(Range(n % 2, n, 2))
+        .toIndexedSeq();
       for (let limit = 10; limit <= n; limit *= 4) {
         // step("Regular sort", n, limit, () => r.sort());
-        step("Partial sort", n, limit, () => r.partialSort(limit));
-        step("Incremental sort", n, limit, () => r.incSort());
+        step('Partial sort', n, limit, () => r.partialSort(limit));
+        step('Incremental sort', n, limit, () => r.incSort());
       }
       if (n > 100) {
         // step("Regular sort", n, n - 100, () => r.sort());
-        step("Partial sort", n, n - 100, () => r.partialSort(n - 100));
-        step("Incrmtl sort", n, n - 100, () => r.incSort());
+        step('Partial sort', n, n - 100, () => r.partialSort(n - 100));
+        step('Incrmtl sort', n, n - 100, () => r.incSort());
       }
     }
-    });
-
+  });
 });

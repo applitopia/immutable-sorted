@@ -15,7 +15,17 @@
 ///<reference path='../resources/jest.d.ts'/>
 
 declare var Symbol: any;
-import { is, List, Map, OrderedSet, Range, Seq, Set, SortedMap, SortedSet } from '../';
+import {
+  is,
+  List,
+  Map,
+  OrderedSet,
+  Range,
+  Seq,
+  Set,
+  SortedMap,
+  SortedSet,
+} from '../';
 
 declare function expect(val: any): ExpectWithIs;
 
@@ -31,7 +41,12 @@ jasmine.addMatchers({
         const passed = is(actual, expected);
         return {
           pass: passed,
-          message: 'Expected ' + actual + (passed ? '' : ' not') + ' to equal ' + expected,
+          message:
+            'Expected ' +
+            actual +
+            (passed ? '' : ' not') +
+            ' to equal ' +
+            expected,
         };
       },
     };
@@ -48,11 +63,11 @@ describe('SortedSet', () => {
   });
 
   it('accepts array-like of values', () => {
-    const s = SortedSet<any>({ length: 3, 1: 2 } as any);
+    const s = SortedSet<any>({ length: 3, 2: 3 } as any);
     expect(s.size).toBe(2);
     expect(s.has(undefined)).toBe(true);
-    expect(s.has(2)).toBe(true);
-    expect(s.has(1)).toBe(false);
+    expect(s.has(3)).toBe(true);
+    expect(s.has(2)).toBe(false);
   });
 
   it('accepts string, an array-like collection', () => {
@@ -74,7 +89,7 @@ describe('SortedSet', () => {
   });
 
   it('accepts a keyed Seq as a set of entries', () => {
-    const seq = Seq({a: null, b: null, c: null}).flip();
+    const seq = Seq({ a: null, b: null, c: null }).flip();
     const s = SortedSet(seq);
     expect(s.toArray()).toEqual([[null, 'a'], [null, 'b'], [null, 'c']]);
     // Explicitly getting the values sequence
@@ -86,7 +101,7 @@ describe('SortedSet', () => {
   });
 
   it('accepts object keys', () => {
-    const s = SortedSet.fromKeys({a: null, b: null, c: null});
+    const s = SortedSet.fromKeys({ a: null, b: null, c: null });
     expect(s.has('a')).toBe(true);
     expect(s.has('b')).toBe(true);
     expect(s.has('c')).toBe(true);
@@ -94,7 +109,7 @@ describe('SortedSet', () => {
   });
 
   it('accepts sequence keys', () => {
-    const seq = Seq({a: null, b: null, c: null});
+    const seq = Seq({ a: null, b: null, c: null });
     const s = SortedSet.fromKeys(seq);
     expect(s.has('a')).toBe(true);
     expect(s.has('b')).toBe(true);
@@ -117,13 +132,15 @@ describe('SortedSet', () => {
 
   it('converts back to JS object', () => {
     const s = SortedSet.of('a', 'b', 'c');
-    expect(s.toObject()).toEqual({a: 'a', b: 'b', c: 'c'});
+    expect(s.toObject()).toEqual({ a: 'a', b: 'b', c: 'c' });
   });
 
   it('unions an unknown collection of SortedSets', () => {
     const abc = SortedSet(['a', 'b', 'c']);
     const cat = SortedSet(['c', 'a', 't']);
-    expect(Set.union([abc, cat]).toArray()).toEqual(['a', 'b', 'c', 't']);
+    expect(Set.union([abc, cat]).toArray()).toEqual(['a', 'c', 't', 'b']);
+    expect(Set.union([abc])).toEqual(Set(['a', 'b', 'c']));
+    expect(Set.union([])).toBe(Set());
   });
 
   it('intersects an unknown collection of SortedSets', () => {
@@ -136,11 +153,7 @@ describe('SortedSet', () => {
     const s = SortedSet.of(1, 2, 3);
     const iterator = jest.genMockFunction();
     s.forEach(iterator);
-    expect(iterator.mock.calls).toEqual([
-      [1, 1, s],
-      [2, 2, s],
-      [3, 3, s],
-    ]);
+    expect(iterator.mock.calls).toEqual([[1, 1, s], [2, 2, s], [3, 3, s]]);
   });
 
   it('unions two sets', () => {
@@ -213,17 +226,26 @@ describe('SortedSet', () => {
   });
 
   it('unions multiple sets', () => {
-    const s = SortedSet.of('A', 'B', 'C').union(SortedSet.of('C', 'D', 'E'), SortedSet.of('D', 'B', 'F'));
+    const s = SortedSet.of('A', 'B', 'C').union(
+      SortedSet.of('C', 'D', 'E'),
+      SortedSet.of('D', 'B', 'F')
+    );
     expect(s).is(SortedSet.of('A', 'B', 'C', 'D', 'E', 'F'));
   });
 
   it('intersects multiple sets', () => {
-    const s = SortedSet.of('A', 'B', 'C').intersect(SortedSet.of('B', 'C', 'D'), SortedSet.of('A', 'C', 'E'));
+    const s = SortedSet.of('A', 'B', 'C').intersect(
+      SortedSet.of('B', 'C', 'D'),
+      SortedSet.of('A', 'C', 'E')
+    );
     expect(s).is(SortedSet.of('C'));
   });
 
   it('diffs multiple sets', () => {
-    const s = SortedSet.of('A', 'B', 'C').subtract(SortedSet.of('C', 'D', 'E'), SortedSet.of('D', 'B', 'F'));
+    const s = SortedSet.of('A', 'B', 'C').subtract(
+      SortedSet.of('C', 'D', 'E'),
+      SortedSet.of('D', 'B', 'F')
+    );
     expect(s).is(SortedSet.of('A'));
   });
 
@@ -242,10 +264,12 @@ describe('SortedSet', () => {
   });
 
   it('can use union in a withMutation', () => {
-    const js = SortedSet().withMutations(set => {
-      set.union([ 'a' ]);
-      set.add('b');
-    }).toJS();
+    const js = SortedSet()
+      .withMutations(set => {
+        set.union(['a']);
+        set.add('b');
+      })
+      .toJS();
     expect(js).toEqual(['a', 'b']);
   });
 
@@ -270,7 +294,7 @@ describe('SortedSet', () => {
       const b = Symbol();
       const c = Symbol();
 
-      const symbolSet = SortedSet([ a, b, c, a, b, c, a, b, c, a, b, c ]);
+      const symbolSet = SortedSet([a, b, c, a, b, c, a, b, c, a, b, c]);
       expect(symbolSet.size).toBe(1);
       expect(symbolSet.has(b)).toBe(true);
       expect(symbolSet.get(c)).toEqual(c);
@@ -278,10 +302,18 @@ describe('SortedSet', () => {
 
     it('operates on a large number of symbols, maintaining obj uniqueness', () => {
       const manySymbols = [
-        Symbol('a'), Symbol('b'), Symbol('c'),
-        Symbol('a'), Symbol('b'), Symbol('c'),
-        Symbol('a'), Symbol('b'), Symbol('c'),
-        Symbol('a'), Symbol('b'), Symbol('c'),
+        Symbol('a'),
+        Symbol('b'),
+        Symbol('c'),
+        Symbol('a'),
+        Symbol('b'),
+        Symbol('c'),
+        Symbol('a'),
+        Symbol('b'),
+        Symbol('c'),
+        Symbol('a'),
+        Symbol('b'),
+        Symbol('c'),
       ];
 
       const symbolSet = SortedSet(manySymbols);
@@ -289,7 +321,6 @@ describe('SortedSet', () => {
       expect(symbolSet.has(manySymbols[10])).toBe(true);
       expect(symbolSet.get(manySymbols[10])).toEqual(manySymbols[10]);
     });
-
   });
 
   it('can use intersect after add or union in a withMutation', () => {
@@ -302,7 +333,7 @@ describe('SortedSet', () => {
   });
 
   it('can count entries that satisfy a predicate', () => {
-    const set = SortedSet( [1, 2, 3, 4, 5 ]);
+    const set = SortedSet([1, 2, 3, 4, 5]);
     expect(set.size).toEqual(5);
     expect(set.count()).toEqual(5);
     expect(set.count(x => x % 2 === 0)).toEqual(2);
@@ -320,7 +351,7 @@ describe('SortedSet', () => {
   it('builds correct seq in function from', () => {
     const size = 10000;
     const data = Range(0, size);
-    const s = new SortedSet(data, undefined, {type: 'btree', btreeOrder: 3});
+    const s = new SortedSet(data, undefined, { type: 'btree', btreeOrder: 3 });
 
     expect(s.toSeq().size).toBe(size);
 
@@ -338,7 +369,7 @@ describe('SortedSet', () => {
   it('builds correct seq in function from backwards', () => {
     const size = 10000;
     const data = Range(0, size);
-    const s = new SortedSet(data, undefined, {type: 'btree', btreeOrder: 3});
+    const s = new SortedSet(data, undefined, { type: 'btree', btreeOrder: 3 });
 
     expect(s.toSeq().size).toBe(size);
 
@@ -354,5 +385,4 @@ describe('SortedSet', () => {
       }
     }
   });
-
 });

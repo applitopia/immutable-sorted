@@ -9,6 +9,7 @@ import { is } from './is';
 import { Collection, KeyedCollection } from './Collection';
 import { IS_MAP_SYMBOL, isMap } from './predicates/isMap';
 import { isOrdered } from './predicates/isOrdered';
+import { isSorted } from './predicates/isSorted';
 import {
   DELETE,
   SHIFT,
@@ -18,7 +19,7 @@ import {
   OwnerID,
   MakeRef,
   SetRef,
-  GetRef
+  GetRef,
 } from './TrieUtils';
 import { hash } from './Hash';
 import { Iterator, iteratorValue, iteratorDone } from './Iterator';

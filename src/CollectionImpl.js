@@ -168,9 +168,7 @@ mixin(Collection, {
   toSeq() {
     return isIndexed(this)
       ? this.toIndexedSeq()
-      : isKeyed(this)
-        ? this.toKeyedSeq()
-        : this.toSetSeq();
+      : isKeyed(this) ? this.toKeyedSeq() : this.toSetSeq();
   },
 
   toStack() {

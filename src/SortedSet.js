@@ -13,8 +13,9 @@
  */
 
 import { SetCollection, KeyedCollection } from './Collection';
-import { IS_SORTED_SENTINEL, isSorted } from './Predicates';
-import { Set, isSet } from './Set';
+import { IS_SORTED_SYMBOL, isSorted } from './predicates/isSorted';
+import { Set } from './Set';
+import { isSet } from './predicates/isSet';
 import { SortedMap, emptySortedMap } from './SortedMap';
 import { mapFactory } from './Operations';
 
@@ -124,7 +125,7 @@ SortedSet.defaultComparator = SortedMap.defaultComparator;
 SortedSet.defaultOptions = SortedMap.defaultOptions;
 
 const SortedSetPrototype = SortedSet.prototype;
-SortedSetPrototype[IS_SORTED_SENTINEL] = true;
+SortedSetPrototype[IS_SORTED_SYMBOL] = true;
 
 SortedSetPrototype.__empty = function() {
   return emptySortedSet(this.getComparator(), this.getOptions());

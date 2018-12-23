@@ -27,6 +27,7 @@ import { isKeyed } from './predicates/isKeyed';
 import { isIndexed } from './predicates/isIndexed';
 import { isAssociative } from './predicates/isAssociative';
 import { isOrdered } from './predicates/isOrdered';
+import { isSorted } from './predicates/isSorted';
 import { isValueObject } from './predicates/isValueObject';
 import { isSeq } from './predicates/isSeq';
 import { isList } from './predicates/isList';

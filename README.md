@@ -1,6 +1,9 @@
 Immutable Sorted Collections for JavaScript
 ===========================================
 [![npm version](https://badge.fury.io/js/immutable-sorted.svg)](https://badge.fury.io/js/immutable-sorted)
+[![jest](https://img.shields.io/badge/tested_with-jest-brightgreen.svg)](https://facebook.github.io/jest/)
+[![dependencies](https://img.shields.io/david/applitopia/immutable-sorted.svg)](https://david-dm.org/applitopia/immutable-sorted)
+[![devDependencies](https://img.shields.io/david/dev/applitopia/immutable-sorted.svg)](https://david-dm.org/applitopia/immutable-sorted?type=dev)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 This package is an extension of popular collections library [Immutable.js](https://github.com/facebook/immutable-js). It provides additional immutable collections [SortedMap](https://applitopia.github.io/immutable-sorted/docs/#/SortedMap) and [SortedSet](https://applitopia.github.io/immutable-sorted/docs/#/SortedSet) that maintain their entries sorted by a comparator. The current implementation is using a classic [B-tree](https://en.wikipedia.org/wiki/B-tree) memory structure.
@@ -12,7 +15,7 @@ operations implemented using [Floyd-Rivest](https://en.wikipedia.org/wiki/Floyd%
 Version
 -------
 
-The current version [immutable-sorted@0.2.6](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.4) is an extension of [immutable-js@4.0.0-rc.9](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.9).
+The current version [immutable-sorted@0.2.7](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.7) is an extension of [immutable-js@4.0.0-rc.12](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.12).
 
 
 Installation
@@ -417,6 +420,6 @@ License
 
 MIT License
 
-Modified work Copyright (c) 2017-2018, Applitopia, Inc.
+Modified work Copyright (c) 2017-present, Applitopia, Inc.
 
 Original work Copyright (c) 2014-present, Facebook, Inc.

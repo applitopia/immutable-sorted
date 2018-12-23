@@ -77,9 +77,7 @@ function deepMergerWith(merger) {
   function deepMerger(oldValue, newValue, key) {
     return isDataStructure(oldValue) && isDataStructure(newValue)
       ? mergeWithSources(oldValue, [newValue], deepMerger)
-      : merger
-        ? merger(oldValue, newValue, key)
-        : newValue;
+      : merger ? merger(oldValue, newValue, key) : newValue;
   }
   return deepMerger;
 }
