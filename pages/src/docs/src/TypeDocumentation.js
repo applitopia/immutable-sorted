@@ -26,8 +26,8 @@ var Disclaimer = function() {
   return (
     <section className="disclaimer">
       This documentation is generated from{' '}
-      <a href={typeDefURL}>Immutable.d.ts</a>
-      . Pull requests and <a href={issuesURL}>Issues</a> welcome.
+      <a href={typeDefURL}>Immutable.d.ts</a>. Pull requests and{' '}
+      <a href={issuesURL}>Issues</a> welcome.
     </section>
   );
 };
@@ -36,7 +36,7 @@ var TypeDocumentation = React.createClass({
   getInitialState() {
     return {
       showInherited: true,
-      showInGroups: true
+      showInGroups: true,
     };
   },
 
@@ -55,7 +55,7 @@ var TypeDocumentation = React.createClass({
 
     var memberGroups = collectMemberGroups(def && def.interface, {
       showInGroups: this.state.showInGroups,
-      showInherited: this.state.showInherited
+      showInherited: this.state.showInherited,
     });
 
     return (
@@ -88,14 +88,12 @@ var TypeDocumentation = React.createClass({
         </div>
       </div>
     );
-  }
+  },
 });
 
-var NotFound = React.createClass({
-  render() {
-    return <div>{'Not found'}</div>;
-  }
-});
+function NotFound() {
+  return <div>Not found</div>;
+}
 
 var FunctionDoc = React.createClass({
   render() {
@@ -112,7 +110,7 @@ var FunctionDoc = React.createClass({
         <code className="codeBlock memberSignature">
           {def.signatures.map((callSig, i) => [
             <CallSigDef key={i} name={name} callSig={callSig} />,
-            '\n'
+            '\n',
           ])}
         </code>
         {doc.notes &&
@@ -139,7 +137,7 @@ var FunctionDoc = React.createClass({
         <Disclaimer />
       </div>
     );
-  }
+  },
 });
 
 var TypeDoc = React.createClass({
@@ -196,7 +194,7 @@ var TypeDoc = React.createClass({
             <h4 className="groupTitle">Sub-types</h4>
             {types
               .map((t, typeName) => (
-                <div key={name}>
+                <div key={typeName}>
                   <Router.Link
                     to={'/' + (name ? name + '.' + typeName : typeName)}
                   >
@@ -217,7 +215,7 @@ var TypeDoc = React.createClass({
               parentName={name}
               member={{
                 memberName: name,
-                memberDef: call
+                memberDef: call,
               }}
             />
           </section>
@@ -235,7 +233,7 @@ var TypeDoc = React.createClass({
                   member={{
                     memberName: fnName,
                     memberDef: t.call,
-                    isStatic: true
+                    isStatic: true,
                   }}
                 />
               ))
@@ -262,7 +260,7 @@ var TypeDoc = React.createClass({
                           parentName={name}
                           member={member}
                         />
-                      ))
+                      )),
                     ])
             )
             .flatten()
@@ -273,7 +271,7 @@ var TypeDoc = React.createClass({
         <Disclaimer />
       </div>
     );
-  }
+  },
 });
 
 /**

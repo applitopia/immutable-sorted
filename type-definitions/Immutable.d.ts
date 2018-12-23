@@ -80,7 +80,7 @@
  *
  *
  * Note: All examples are presented in the modern [ES2015][] version of
- * JavaScript. To run in older browsers, they need to be translated to ES3.
+ * JavaScript. Use tools like Babel to support older browsers.
  *
  * For example:
  *
@@ -120,7 +120,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List } = require('immutable@4.0.0-rc.9');
+     * const { List } = require('immutable');
      * List.isList([]); // false
      * List.isList(List()); // true
      * ```
@@ -132,7 +132,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List } = require('immutable@4.0.0-rc.9');
+     * const { List } = require('immutable');
      * List.of(1, 2, 3, 4)
      * // List [ 1, 2, 3, 4 ]
      * ```
@@ -141,7 +141,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List } = require('immutable@4.0.0-rc.9');
+     * const { List } = require('immutable');
      * List.of({x:1}, 2, [3], 4)
      * // List [ { x: 1 }, 2, [ 3 ], 4 ]
      * ```
@@ -153,9 +153,12 @@ declare module Immutable {
    * Create a new immutable List containing the values of the provided
    * collection-like.
    *
+   * Note: `List` is a factory function and not a class, and does not use the
+   * `new` keyword during construction.
+   *
    * <!-- runkit:activate -->
    * ```js
-   * const { List, Set } = require('immutable@4.0.0-rc.9')
+   * const { List, Set } = require('immutable')
    *
    * const emptyList = List()
    * // List []
@@ -201,7 +204,7 @@ declare module Immutable {
      * enough to include the `index`.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * const originalList = List([ 0 ]);
@@ -234,7 +237,7 @@ declare module Immutable {
      * Note: `delete` cannot be safely used in IE8
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * List([ 0, 1, 2, 3, 4 ]).delete(0);
@@ -258,7 +261,7 @@ declare module Immutable {
      * This is synonymous with `list.splice(index, 0, value)`.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * List([ 0, 1, 2, 3, 4 ]).insert(6, 5)
@@ -276,7 +279,7 @@ declare module Immutable {
      * Returns a new List with 0 size and no values in constant time.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * List([ 1, 2, 3, 4 ]).clear()
@@ -292,7 +295,7 @@ declare module Immutable {
      * List's `size`.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * List([ 1, 2, 3, 4 ]).push(5)
@@ -325,7 +328,7 @@ declare module Immutable {
      * values ahead to higher indices.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * List([ 2, 3, 4]).unshift(1);
@@ -345,7 +348,7 @@ declare module Immutable {
      * value in this List.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * List([ 0, 1, 2, 3, 4 ]).shift();
@@ -366,7 +369,7 @@ declare module Immutable {
      * List. `v.update(-1)` updates the last item in the List.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * const list = List([ 'a', 'b', 'c' ])
@@ -380,7 +383,7 @@ declare module Immutable {
      * For example, to sum a List after mapping and filtering:
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * function sum(collection) {
@@ -426,7 +429,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List } = require('immutable@4.0.0-rc.9')
+     * const { List } = require('immutable')
      * const list = List([ 0, 1, 2, List([ 3, 4 ])])
      * list.setIn([3, 0], 999);
      * // List [ 0, 1, 2, List [ 999, 4 ] ]
@@ -438,7 +441,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List } = require('immutable@4.0.0-rc.9')
+     * const { List } = require('immutable')
      * const list = List([ 0, 1, 2, { plain: 'object' }])
      * list.setIn([3, 'plain'], 'value');
      * // List([ 0, 1, 2, { plain: 'value' }])
@@ -454,7 +457,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List } = require('immutable@4.0.0-rc.9')
+     * const { List } = require('immutable')
      * const list = List([ 0, 1, 2, List([ 3, 4 ])])
      * list.deleteIn([3, 0]);
      * // List [ 0, 1, 2, List [ 4 ] ]
@@ -466,7 +469,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List } = require('immutable@4.0.0-rc.9')
+     * const { List } = require('immutable')
      * const list = List([ 0, 1, 2, { plain: 'object' }])
      * list.removeIn([3, 'plain']);
      * // List([ 0, 1, 2, {}])
@@ -550,15 +553,12 @@ declare module Immutable {
      * `mapper` function.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * List([ 1, 2 ]).map(x => 10 * x)
      * // List [ 10, 20 ]
      * ```
-     *
-     * Note: `map()` always returns a new instance, even if it produced the same
-     * value at every step.
      */
     map<M>(
       mapper: (value: T, key: number, iter: this) => M,
@@ -597,7 +597,7 @@ declare module Immutable {
      * Like `zipWith`, but using the default `zipper`: creating an `Array`.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * const a = List([ 1, 2, 3 ]);
@@ -616,7 +616,7 @@ declare module Immutable {
      * exhausted. Missing values from shorter collections are filled with `undefined`.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * const a = List([ 1, 2 ]);
@@ -637,7 +637,7 @@ declare module Immutable {
      * custom `zipper` function.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { List } = require('immutable');" }
      * -->
      * ```js
      * const a = List([ 1, 2, 3 ]);
@@ -678,7 +678,7 @@ declare module Immutable {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { Map, List } = require('immutable@4.0.0-rc.9');
+   * const { Map, List } = require('immutable');
    * Map().set(List([ 1 ]), 'listofone').get(List([ 1 ]));
    * // 'listofone'
    * ```
@@ -696,7 +696,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * Map.isMap({}) // false
      * Map.isMap(Map()) // true
      * ```
@@ -708,7 +708,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * Map.of(
      *   'key', 'value',
      *   'numerical value', 3,
@@ -728,9 +728,12 @@ declare module Immutable {
    * Created with the same key value pairs as the provided Collection.Keyed or
    * JavaScript Object or expects a Collection of [K, V] tuple entries.
    *
+   * Note: `Map` is a factory function and not a class, and does not use the
+   * `new` keyword during construction.
+   *
    * <!-- runkit:activate -->
    * ```js
-   * const { Map } = require('immutable@4.0.0-rc.9')
+   * const { Map } = require('immutable')
    * Map({ key: "value" })
    * Map([ [ "key", "value" ] ])
    * ```
@@ -740,7 +743,7 @@ declare module Immutable {
    * quote-less shorthand, while Immutable Maps accept keys of any type.
    *
    * <!-- runkit:activate
-   *      { "preamble": "const { Map } = require('immutable@4.0.0-rc.9');" }
+   *      { "preamble": "const { Map } = require('immutable');" }
    * -->
    * ```js
    * let obj = { 1: "one" }
@@ -756,7 +759,6 @@ declare module Immutable {
    * not altered.
    */
   export function Map<K, V>(collection: Iterable<[K, V]>): Map<K, V>;
-  export function Map<T>(collection: Iterable<Iterable<T>>): Map<T, T>;
   export function Map<V>(obj: {[key: string]: V}): Map<string, V>;
   export function Map<K, V>(): Map<K, V>;
   export function Map(): Map<any, any>;
@@ -776,7 +778,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * const originalMap = Map()
      * const newerMap = originalMap.set('key', 'value')
      * const newestMap = newerMap.set('key', 'newer value')
@@ -801,7 +803,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * const originalMap = Map({
      *   key: 'value',
      *   otherKey: 'other value'
@@ -823,7 +825,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * const names = Map({ a: "Aaron", b: "Barry", c: "Connor" })
      * names.deleteAll([ 'a', 'c' ])
      * // Map { "b": "Barry" }
@@ -841,7 +843,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * Map({ key: 'value' }).clear()
      * // Map {}
      * ```
@@ -858,7 +860,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * const aMap = Map({ key: 'value' })
      * const newMap = aMap.update('key', value => value + value)
      * // Map { "key": "valuevalue" }
@@ -869,7 +871,7 @@ declare module Immutable {
      * `update` and `push` can be used together:
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Map, List } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { Map, List } = require('immutable');" }
      * -->
      * ```js
      * const aMap = Map({ nestedList: List([ 1, 2, 3 ]) })
@@ -881,7 +883,7 @@ declare module Immutable {
      * function when the value at the key does not exist in the Map.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Map } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { Map } = require('immutable');" }
      * -->
      * ```js
      * const aMap = Map({ key: 'value' })
@@ -894,7 +896,7 @@ declare module Immutable {
      * is provided.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Map } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { Map } = require('immutable');" }
      * -->
      * ```js
      * const aMap = Map({ apples: 10 })
@@ -910,7 +912,7 @@ declare module Immutable {
      * The previous example behaves differently when written with default values:
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Map } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { Map } = require('immutable');" }
      * -->
      * ```js
      * const aMap = Map({ apples: 10 })
@@ -922,7 +924,7 @@ declare module Immutable {
      * returned as well.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Map } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { Map } = require('immutable');" }
      * -->
      * ```js
      * const aMap = Map({ key: 'value' })
@@ -936,7 +938,7 @@ declare module Immutable {
      * For example, to sum the values in a Map
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Map } = require('immutable@4.0.0-rc.9');" }
+     *      { "preamble": "const { Map } = require('immutable');" }
      * -->
      * ```js
      * function sum(collection) {
@@ -966,7 +968,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * const one = Map({ a: 10, b: 20, c: 30 })
      * const two = Map({ b: 40, a: 50, d: 60 })
      * one.merge(two) // Map { "a": 50, "b": 40, "c": 30, "d": 60 }
@@ -989,7 +991,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * const one = Map({ a: 10, b: 20, c: 30 })
      * const two = Map({ b: 40, a: 50, d: 60 })
      * one.mergeWith((oldVal, newVal) => oldVal / newVal, two)
@@ -1015,7 +1017,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * const one = Map({ a: Map({ x: 10, y: 10 }), b: Map({ x: 20, y: 50 }) })
      * const two = Map({ a: Map({ x: 2 }), b: Map({ y: 5 }), c: Map({ z: 3 }) })
      * one.mergeDeep(two)
@@ -1036,7 +1038,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * const one = Map({ a: Map({ x: 10, y: 10 }), b: Map({ x: 20, y: 50 }) })
      * const two = Map({ a: Map({ x: 2 }), b: Map({ y: 5 }), c: Map({ z: 3 }) })
      * one.mergeDeepWith((oldVal, newVal) => oldVal / newVal, two)
@@ -1050,7 +1052,7 @@ declare module Immutable {
      * Note: `mergeDeepWith` can be used in `withMutations`.
      */
     mergeDeepWith(
-      merger: (oldVal: V, newVal: V, key: K) => V,
+      merger: (oldVal: any, newVal: any, key: any) => any,
       ...collections: Array<Iterable<[K, V]> | {[key: string]: V}>
     ): this;
 
@@ -1063,7 +1065,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * const originalMap = Map({
      *   subObject: Map({
      *     subKey: 'subvalue',
@@ -1099,7 +1101,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * const originalMap = Map({
      *   subObject: {
      *     subKey: 'subvalue',
@@ -1146,7 +1148,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map, List } = require('immutable@4.0.0-rc.9')
+     * const { Map, List } = require('immutable')
      * const map = Map({ inMap: Map({ inList: List([ 1, 2, 3 ]) }) })
      * const newMap = map.updateIn(['inMap', 'inList'], list => list.push(4))
      * // Map { "inMap": Map { "inList": List [ 1, 2, 3, 4 ] } }
@@ -1158,7 +1160,7 @@ declare module Immutable {
      * provided, otherwise `undefined`.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Map } = require('immutable@4.0.0-rc.9')" }
+     *      { "preamble": "const { Map } = require('immutable')" }
      * -->
      * ```js
      * const map = Map({ a: Map({ b: Map({ c: 10 }) }) })
@@ -1170,7 +1172,7 @@ declare module Immutable {
      * no change will occur. This is still true if `notSetValue` is provided.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Map } = require('immutable@4.0.0-rc.9')" }
+     *      { "preamble": "const { Map } = require('immutable')" }
      * -->
      * ```js
      * const map = Map({ a: Map({ b: Map({ c: 10 }) }) })
@@ -1186,7 +1188,7 @@ declare module Immutable {
      * The previous example behaves differently when written with default values:
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Map } = require('immutable@4.0.0-rc.9')" }
+     *      { "preamble": "const { Map } = require('immutable')" }
      * -->
      * ```js
      * const map = Map({ a: Map({ b: Map({ c: 10 }) }) })
@@ -1199,7 +1201,7 @@ declare module Immutable {
      * immutably by creating new copies of those values with the changes applied.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Map } = require('immutable@4.0.0-rc.9')" }
+     *      { "preamble": "const { Map } = require('immutable')" }
      * -->
      * ```js
      * const map = Map({ a: { b: { c: 10 } } })
@@ -1260,7 +1262,7 @@ declare module Immutable {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * const map1 = Map()
      * const map2 = map1.withMutations(map => {
      *   map.set('a', 1).set('b', 2).set('c', 3)
@@ -1280,14 +1282,18 @@ declare module Immutable {
      * a mutable copy of this collection. Mutable copies *always* return `this`,
      * and thus shouldn't be used for equality. Your function should never return
      * a mutable copy of a collection, only use it internally to create a new
-     * collection. If possible, use `withMutations` as it provides an easier to
-     * use API.
+     * collection.
+     *
+     * If possible, use `withMutations` to work with temporary mutable copies as
+     * it provides an easier to use API and considers many common optimizations.
      *
      * Note: if the collection is already mutable, `asMutable` returns itself.
      *
      * Note: Not all methods can be used on a mutable collection or within
      * `withMutations`! Read the documentation for each method to see if it
      * is safe to use in `withMutations`.
+     *
+     * @see `Map#asImmutable`
      */
     asMutable(): this;
 
@@ -1301,8 +1307,15 @@ declare module Immutable {
 
     /**
      * The yin to `asMutable`'s yang. Because it applies to mutable collections,
-     * this operation is *mutable* and returns itself. Once performed, the mutable
-     * copy has become immutable and can be safely returned from a function.
+     * this operation is *mutable* and may return itself (though may not
+     * return itself, i.e. if the result is an empty collection). Once
+     * performed, the original mutable copy must no longer be mutated since it
+     * may be the immutable result.
+     *
+     * If possible, use `withMutations` to work with temporary mutable copies as
+     * it provides an easier to use API and considers many common optimizations.
+     *
+     * @see `Map#asMutable`
      */
     asImmutable(): this;
 
@@ -1314,9 +1327,6 @@ declare module Immutable {
      *
      *     Map({ a: 1, b: 2 }).map(x => 10 * x)
      *     // Map { a: 10, b: 20 }
-     *
-     * Note: `map()` always returns a new instance, even if it produced the same
-     * value at every step.
      */
     map<M>(
       mapper: (value: V, key: K, iter: this) => M,
@@ -1785,9 +1795,10 @@ export module SortedMap {
    *     let newOrderedMap = OrderedMap({key: "value"})
    *     let newOrderedMap = OrderedMap([["key", "value"]])
    *
+   * Note: `OrderedMap` is a factory function and not a class, and does not use
+   * the `new` keyword during construction.
    */
   export function OrderedMap<K, V>(collection: Iterable<[K, V]>): OrderedMap<K, V>;
-  export function OrderedMap<T>(collection: Iterable<Iterable<T>>): OrderedMap<T, T>;
   export function OrderedMap<V>(obj: {[key: string]: V}): OrderedMap<string, V>;
   export function OrderedMap<K, V>(): OrderedMap<K, V>;
   export function OrderedMap(): OrderedMap<any, any>;
@@ -1800,6 +1811,27 @@ export module SortedMap {
     readonly size: number;
 
     /**
+     * Returns a new OrderedMap also containing the new key, value pair. If an
+     * equivalent key already exists in this OrderedMap, it will be replaced
+     * while maintaining the existing order.
+     *
+     * <!-- runkit:activate -->
+     * ```js
+     * const { OrderedMap } = require('immutable')
+     * const originalMap = OrderedMap({a:1, b:1, c:1})
+     * const updatedMap = originalMap.set('b', 2)
+     *
+     * originalMap
+     * // OrderedMap {a: 1, b: 1, c: 1}
+     * updatedMap
+     * // OrderedMap {a: 1, b: 2, c: 1}
+     * ```
+     *
+     * Note: `set` can be used in `withMutations`.
+     */
+    set(key: K, value: V): this;
+
+    /**
      * Returns a new OrderedMap resulting from merging the provided Collections
      * (or JS objects) into this OrderedMap. In other words, this takes each
      * entry of each collection and sets it on this OrderedMap.
@@ -1809,7 +1841,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { OrderedMap } = require('immutable@4.0.0-rc.9')
+     * const { OrderedMap } = require('immutable')
      * const one = OrderedMap({ a: 10, b: 20, c: 30 })
      * const two = OrderedMap({ b: 40, a: 50, d: 60 })
      * one.merge(two) // OrderedMap { "a": 50, "b": 40, "c": 30, "d": 60 }
@@ -1926,7 +1958,7 @@ export module SortedMap {
      * a collection of other sets.
      *
      * ```js
-     * const { Set } = require('immutable@4.0.0-rc.9')
+     * const { Set } = require('immutable')
      * const intersected = Set.intersect([
      *   Set([ 'a', 'b', 'c' ])
      *   Set([ 'c', 'a', 't' ])
@@ -1941,7 +1973,7 @@ export module SortedMap {
      * collection of other sets.
      *
      * ```js
-     * const { Set } = require('immutable@4.0.0-rc.9')
+     * const { Set } = require('immutable')
      * const unioned = Set.union([
      *   Set([ 'a', 'b', 'c' ])
      *   Set([ 'c', 'a', 't' ])
@@ -1955,6 +1987,9 @@ export module SortedMap {
   /**
    * Create a new immutable Set containing the values of the provided
    * collection-like.
+   *
+   * Note: `Set` is a factory function and not a class, and does not use the
+   * `new` keyword during construction.
    */
   export function Set(): Set<any>;
   export function Set<T>(): Set<T>;
@@ -2019,6 +2054,13 @@ export module SortedMap {
     /**
      * Returns a Set excluding any values contained within `collections`.
      *
+     * <!-- runkit:activate -->
+     * ```js
+     * const { OrderedSet } = require('immutable')
+     * OrderedSet([ 1, 2, 3 ]).subtract([1, 3])
+     * // OrderedSet [2]
+     * ```
+     *
      * Note: `subtract` can be used in `withMutations`.
      */
     subtract(...collections: Array<Iterable<T>>): this;
@@ -2062,9 +2104,6 @@ export module SortedMap {
      *
      *     Set([1,2]).map(x => 10 * x)
      *     // Set [10,20]
-     *
-     * Note: `map()` always returns a new instance, even if it produced the same
-     * value at every step.
      */
     map<M>(
       mapper: (value: T, key: T, iter: this) => M,
@@ -2501,6 +2540,9 @@ export module SortedMap {
   /**
    * Create a new immutable OrderedSet containing the values of the provided
    * collection-like.
+   *
+   * Note: `OrderedSet` is a factory function and not a class, and does not use
+   * the `new` keyword during construction.
    */
   export function OrderedSet(): OrderedSet<any>;
   export function OrderedSet<T>(): OrderedSet<T>;
@@ -2533,9 +2575,6 @@ export module SortedMap {
      *
      *     OrderedSet([ 1, 2 ]).map(x => 10 * x)
      *     // OrderedSet [10, 20]
-     *
-     * Note: `map()` always returns a new instance, even if it produced the same
-     * value at every step.
      */
     map<M>(
       mapper: (value: T, key: T, iter: this) => M,
@@ -2661,6 +2700,9 @@ export module SortedMap {
    *
    * The iteration order of the provided collection is preserved in the
    * resulting `Stack`.
+   *
+   * Note: `Stack` is a factory function and not a class, and does not use the
+   * `new` keyword during construction.
    */
   export function Stack(): Stack<any>;
   export function Stack<T>(): Stack<T>;
@@ -2880,8 +2922,11 @@ export module SortedMap {
    * (exclusive), by `step`, where `start` defaults to 0, `step` to 1, and `end` to
    * infinity. When `start` is equal to `end`, returns empty range.
    *
+   * Note: `Range` is a factory function and not a class, and does not use the
+   * `new` keyword during construction.
+   *
    * ```js
-   * const { Range } = require('immutable@4.0.0-rc.9')
+   * const { Range } = require('immutable')
    * Range() // [ 0, 1, 2, 3, ... ]
    * Range(10) // [ 10, 11, 12, 13, ... ]
    * Range(10, 15) // [ 10, 11, 12, 13, 14 ]
@@ -2897,8 +2942,11 @@ export module SortedMap {
    * Returns a Seq.Indexed of `value` repeated `times` times. When `times` is
    * not defined, returns an infinite `Seq` of `value`.
    *
+   * Note: `Repeat` is a factory function and not a class, and does not use the
+   * `new` keyword during construction.
+   *
    * ```js
-   * const { Repeat } = require('immutable@4.0.0-rc.9')
+   * const { Repeat } = require('immutable')
    * Repeat('foo') // [ 'foo', 'foo', 'foo', ... ]
    * Repeat('bar', 4) // [ 'bar', 'bar', 'bar', 'bar' ]
    * ```
@@ -2914,9 +2962,9 @@ export module SortedMap {
    * create Record instances.
    *
    * ```js
-   * const { Record } = require('immutable@4.0.0-rc.9')
+   * const { Record } = require('immutable')
    * const ABRecord = Record({ a: 1, b: 2 })
-   * const myRecord = new ABRecord({ b: 3 })
+   * const myRecord = ABRecord({ b: 3 })
    * ```
    *
    * Records always have a value for the keys they define. `remove`ing a key
@@ -2937,7 +2985,7 @@ export module SortedMap {
    * ignored for this record.
    *
    * ```js
-   * const myRecord = new ABRecord({ b: 3, x: 10 })
+   * const myRecord = ABRecord({ b: 3, x: 10 })
    * myRecord.get('x') // undefined
    * ```
    *
@@ -2952,9 +3000,19 @@ export module SortedMap {
    * myRecord.b = 5 // throws Error
    * ```
    *
-   * Record Classes can be extended as well, allowing for custom methods on your
+   * Record Types can be extended as well, allowing for custom methods on your
    * Record. This is not a common pattern in functional environments, but is in
    * many JS programs.
+   *
+   * However Record Types are more restricted than typical JavaScript classes.
+   * They do not use a class constructor, which also means they cannot use
+   * class properties (since those are technically part of a constructor).
+   *
+   * While Record Types can be syntactically created with the JavaScript `class`
+   * form, the resulting Record function is actually a factory function, not a
+   * class constructor. Even though Record Types are not classes, JavaScript
+   * currently requires the use of `new` when creating new Record instances if
+   * they are defined as a `class`.
    *
    * ```
    * class ABRecord extends Record({ a: 1, b: 2 }) {
@@ -2971,12 +3029,12 @@ export module SortedMap {
    * **Flow Typing Records:**
    *
    * Immutable.js exports two Flow types designed to make it easier to use
-   * Records with flow typed code, `RecordOf<T>` and `RecordFactory<TProps>`.
+   * Records with flow typed code, `RecordOf<TProps>` and `RecordFactory<TProps>`.
    *
    * When defining a new kind of Record factory function, use a flow type that
    * describes the values the record contains along with `RecordFactory<TProps>`.
    * To type instances of the Record (which the factory function returns),
-   * use `RecordOf<T>`.
+   * use `RecordOf<TProps>`.
    *
    * Typically, new Record definitions will export both the Record factory
    * function as well as the Record instance type for use in other code.
@@ -2986,7 +3044,8 @@ export module SortedMap {
    *
    * // Use RecordFactory<TProps> for defining new Record factory functions.
    * type Point3DProps = { x: number, y: number, z: number };
-   * const makePoint3D: RecordFactory<Point3DProps> = Record({ x: 0, y: 0, z: 0 });
+   * const defaultValues: Point3DProps = { x: 0, y: 0, z: 0 };
+   * const makePoint3D: RecordFactory<Point3DProps> = Record(defaultValues);
    * export makePoint3D;
    *
    * // Use RecordOf<T> for defining new instances of that Record.
@@ -2994,10 +3053,34 @@ export module SortedMap {
    * const some3DPoint: Point3D = makePoint3D({ x: 10, y: 20, z: 30 });
    * ```
    *
+   * **Flow Typing Record Subclasses:**
+   *
+   * Records can be subclassed as a means to add additional methods to Record
+   * instances. This is generally discouraged in favor of a more functional API,
+   * since Subclasses have some minor overhead. However the ability to create
+   * a rich API on Record types can be quite valuable.
+   *
+   * When using Flow to type Subclasses, do not use `RecordFactory<TProps>`,
+   * instead apply the props type when subclassing:
+   *
+   * ```js
+   * type PersonProps = {name: string, age: number};
+   * const defaultValues: PersonProps = {name: 'Aristotle', age: 2400};
+   * const PersonRecord = Record(defaultValues);
+   * class Person extends PersonRecord<PersonProps> {
+   *   getName(): string {
+   *     return this.get('name')
+   *   }
+   *
+   *   setName(name: string): this {
+   *     return this.set('name', name);
+   *   }
+   * }
+   * ```
    *
    * **Choosing Records vs plain JavaScript objects**
    *
-   * Records ofters a persistently immutable alternative to plain JavaScript
+   * Records offer a persistently immutable alternative to plain JavaScript
    * objects, however they're not required to be used within Immutable.js
    * collections. In fact, the deep-access and deep-updating functions
    * like `getIn()` and `setIn()` work with plain JavaScript Objects as well.
@@ -3046,7 +3129,7 @@ export module SortedMap {
      * method. If one was not provided, the string "Record" is returned.
      *
      * ```js
-     * const { Record } = require('immutable@4.0.0-rc.9')
+     * const { Record } = require('immutable')
      * const Person = Record({
      *   name: null
      * }, 'Person')
@@ -3064,7 +3147,7 @@ export module SortedMap {
      * type:
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Record } = require('immutable@4.0.0-rc.9')" }
+     *      { "preamble": "const { Record } = require('immutable')" }
      * -->
      * ```js
      * // makePerson is a Record Factory function
@@ -3079,7 +3162,7 @@ export module SortedMap {
      * access on the resulting instances:
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Record } = require('immutable@4.0.0-rc.9');const makePerson = Record({ name: null, favoriteColor: 'unknown' });const alan = makePerson({ name: 'Alan' });" }
+     *      { "preamble": "const { Record } = require('immutable');const makePerson = Record({ name: null, favoriteColor: 'unknown' });const alan = makePerson({ name: 'Alan' });" }
      * -->
      * ```js
      * // Use the Record API
@@ -3111,6 +3194,12 @@ export module SortedMap {
     export interface Factory<TProps extends Object> {
       (values?: Partial<TProps> | Iterable<[string, any]>): Record<TProps> & Readonly<TProps>;
       new (values?: Partial<TProps> | Iterable<[string, any]>): Record<TProps> & Readonly<TProps>;
+
+      /**
+       * The name provided to `Record(values, name)` can be accessed with
+       * `displayName`.
+       */
+      displayName: string;
     }
 
     export function Factory<TProps extends Object>(values?: Partial<TProps> | Iterable<[string, any]>): Record<TProps> & Readonly<TProps>;
@@ -3121,6 +3210,9 @@ export module SortedMap {
    * Record Factory, which is a function that creates Record instances.
    *
    * See above for examples of using `Record()`.
+   *
+   * Note: `Record` is a factory function and not a class, and does not use the
+   * `new` keyword during construction.
    */
   export function Record<TProps>(defaultValues: TProps, name?: string): Record.Factory<TProps>;
 
@@ -3128,7 +3220,7 @@ export module SortedMap {
 
     // Reading values
 
-    has(key: string): key is keyof TProps;
+    has(key: string): key is keyof TProps & string;
 
     /**
      * Returns the value associated with the provided key, which may be the
@@ -3138,7 +3230,8 @@ export module SortedMap {
      * notSetValue will be returned if provided. Note that this scenario would
      * produce an error when using Flow or TypeScript.
      */
-    get<K extends keyof TProps>(key: K, notSetValue: any): TProps[K];
+    get<K extends keyof TProps>(key: K, notSetValue?: any): TProps[K];
+    get<T>(key: string, notSetValue: T): T;
 
     // Reading deep values
 
@@ -3198,6 +3291,9 @@ export module SortedMap {
 
     /**
      * Deeply converts this Record to equivalent native JavaScript Object.
+     *
+     * Note: This method may not be overridden. Objects with custom
+     * serialization to plain JS may override toJSON() instead.
      */
     toJS(): { [K in keyof TProps]: any };
 
@@ -3244,6 +3340,15 @@ export module SortedMap {
   }
 
   /**
+   * RecordOf<T> is used in TypeScript to define interfaces expecting an
+   * instance of record with type T.
+   *
+   * This is equivalent to an instance of a record created by a Record Factory.
+   */
+  export type RecordOf<TProps extends Object> = Record<TProps> &
+    Readonly<TProps>;
+
+  /**
    * `Seq` describes a lazy operation, allowing them to efficiently chain
    * use of all the higher-order collection methods (such as `map` and `filter`)
    * by not creating intermediate collections.
@@ -3261,7 +3366,7 @@ export module SortedMap {
    * `Seq`'s values are never iterated:
    *
    * ```js
-   * const { Seq } = require('immutable@4.0.0-rc.9')
+   * const { Seq } = require('immutable')
    * const oddSquares = Seq([ 1, 2, 3, 4, 5, 6, 7, 8 ])
    *   .filter(x => x % 2 !== 0)
    *   .map(x => x * x)
@@ -3300,7 +3405,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { Range } = require('immutable@4.0.0-rc.9')
+   * const { Range } = require('immutable')
    * Range(1, Infinity)
    *   .skip(1000)
    *   .map(n => -n)
@@ -3323,7 +3428,7 @@ export module SortedMap {
      * True if `maybeSeq` is a Seq, it is not backed by a concrete
      * structure such as Map, List, or Set.
      */
-    function isSeq(maybeSeq: any): maybeSeq is Seq.Indexed<any> | Seq.Keyed<any, any>;
+    function isSeq(maybeSeq: any): maybeSeq is Seq.Indexed<any> | Seq.Keyed<any, any> | Seq.Set<any>;
 
 
     /**
@@ -3334,6 +3439,9 @@ export module SortedMap {
     /**
      * Always returns a Seq.Keyed, if input is not keyed, expects an
      * collection of [K, V] tuples.
+     *
+     * Note: `Seq.Keyed` is a conversion function and not a class, and does not
+     * use the `new` keyword during construction.
      */
     export function Keyed<K, V>(collection: Iterable<[K, V]>): Seq.Keyed<K, V>;
     export function Keyed<V>(obj: {[key: string]: V}): Seq.Keyed<string, V>;
@@ -3379,7 +3487,7 @@ export module SortedMap {
        * `mapper` function.
        *
        * ```js
-       * const { Seq } = require('immutable@4.0.0-rc.9')
+       * const { Seq } = require('immutable')
        * Seq.Keyed({ a: 1, b: 2 }).map(x => 10 * x)
        * // Seq { "a": 10, "b": 20 }
        * ```
@@ -3455,6 +3563,9 @@ export module SortedMap {
     /**
      * Always returns Seq.Indexed, discarding associated keys and
      * supplying incrementing indices.
+     *
+     * Note: `Seq.Indexed` is a conversion function and not a class, and does
+     * not use the `new` keyword during construction.
      */
     export function Indexed(): Seq.Indexed<any>;
     export function Indexed<T>(): Seq.Indexed<T>;
@@ -3491,7 +3602,7 @@ export module SortedMap {
        * `mapper` function.
        *
        * ```js
-       * const { Seq } = require('immutable@4.0.0-rc.9')
+       * const { Seq } = require('immutable')
        * Seq.Indexed([ 1, 2 ]).map(x => 10 * x)
        * // Seq [ 10, 20 ]
        * ```
@@ -3604,6 +3715,9 @@ export module SortedMap {
 
     /**
      * Always returns a Seq.Set, discarding associated indices or keys.
+     *
+     * Note: `Seq.Set` is a conversion function and not a class, and does not
+     * use the `new` keyword during construction.
      */
     export function Set(): Seq.Set<any>;
     export function Set<T>(): Seq.Set<T>;
@@ -3692,10 +3806,16 @@ export module SortedMap {
    *   * If a `Seq`, that same `Seq`.
    *   * If an `Collection`, a `Seq` of the same kind (Keyed, Indexed, or Set).
    *   * If an Array-like, an `Seq.Indexed`.
-   *   * If an Object with an Iterator, an `Seq.Indexed`.
-   *   * If an Iterator, an `Seq.Indexed`.
+   *   * If an Iterable Object, an `Seq.Indexed`.
    *   * If an Object, a `Seq.Keyed`.
    *
+   * Note: An Iterator itself will be treated as an object, becoming a `Seq.Keyed`,
+   * which is usually not what you want. You should turn your Iterator Object into
+   * an iterable object by defining a Symbol.iterator (or @@iterator) method which
+   * returns `this`.
+   *
+   * Note: `Seq` is a conversion function and not a class, and does not use the
+   * `new` keyword during construction.
    */
   export function Seq<S extends Seq<any, any>>(seq: S): S;
   export function Seq<K, V>(collection: Collection.Keyed<K, V>): Seq.Keyed<K, V>;
@@ -3751,7 +3871,7 @@ export module SortedMap {
      * `mapper` function.
      *
      * ```js
-     * const { Seq } = require('immutable@4.0.0-rc.9')
+     * const { Seq } = require('immutable')
      * Seq([ 1, 2 ]).map(x => 10 * x)
      * // Seq [ 10, 20 ]
      * ```
@@ -3769,7 +3889,7 @@ export module SortedMap {
      * `mapper` function.
      *
      * ```js
-     * const { Seq } = require('immutable@4.0.0-rc.9')
+     * const { Seq } = require('immutable')
      * Seq([ 1, 2 ]).map(x => 10 * x)
      * // Seq [ 10, 20 ]
      * ```
@@ -3838,22 +3958,22 @@ export module SortedMap {
   export module Collection {
 
     /**
-     * @deprecated use `const { isKeyed } = require('immutable@4.0.0-rc.9')`
+     * @deprecated use `const { isKeyed } = require('immutable')`
      */
     function isKeyed(maybeKeyed: any): maybeKeyed is Collection.Keyed<any, any>;
 
     /**
-     * @deprecated use `const { isIndexed } = require('immutable@4.0.0-rc.9')`
+     * @deprecated use `const { isIndexed } = require('immutable')`
      */
     function isIndexed(maybeIndexed: any): maybeIndexed is Collection.Indexed<any>;
 
     /**
-     * @deprecated use `const { isAssociative } = require('immutable@4.0.0-rc.9')`
+     * @deprecated use `const { isAssociative } = require('immutable')`
      */
     function isAssociative(maybeAssociative: any): maybeAssociative is Collection.Keyed<any, any> | Collection.Indexed<any>;
 
     /**
-     * @deprecated use `const { isOrdered } = require('immutable@4.0.0-rc.9')`
+     * @deprecated use `const { isOrdered } = require('immutable')`
      */
     function isOrdered(maybeOrdered: any): boolean;
 
@@ -3872,6 +3992,9 @@ export module SortedMap {
      *
      * Similar to `Collection()`, however it expects collection-likes of [K, V]
      * tuples if not constructed from a Collection.Keyed or JS Object.
+     *
+     * Note: `Collection.Keyed` is a conversion function and not a class, and
+     * does not use the `new` keyword during construction.
      */
     export function Keyed<K, V>(collection: Iterable<[K, V]>): Collection.Keyed<K, V>;
     export function Keyed<V>(obj: {[key: string]: V}): Collection.Keyed<string, V>;
@@ -3911,7 +4034,7 @@ export module SortedMap {
        *
        * <!-- runkit:activate -->
        * ```js
-       * const { Map } = require('immutable@4.0.0-rc.9')
+       * const { Map } = require('immutable')
        * Map({ a: 'z', b: 'y' }).flip()
        * // Map { "z": "a", "y": "b" }
        * ```
@@ -3929,7 +4052,7 @@ export module SortedMap {
        * `mapper` function.
        *
        * ```js
-       * const { Collection } = require('immutable@4.0.0-rc.9')
+       * const { Collection } = require('immutable')
        * Collection.Keyed({ a: 1, b: 2 }).map(x => 10 * x)
        * // Seq { "a": 10, "b": 20 }
        * ```
@@ -3948,7 +4071,7 @@ export module SortedMap {
        *
        * <!-- runkit:activate -->
        * ```js
-       * const { Map } = require('immutable@4.0.0-rc.9')
+       * const { Map } = require('immutable')
        * Map({ a: 1, b: 2 }).mapKeys(x => x.toUpperCase())
        * // Map { "A": 1, "B": 2 }
        * ```
@@ -3967,7 +4090,7 @@ export module SortedMap {
        *
        * <!-- runkit:activate -->
        * ```js
-       * const { Map } = require('immutable@4.0.0-rc.9')
+       * const { Map } = require('immutable')
        * Map({ a: 1, b: 2 })
        *   .mapEntries(([ k, v ]) => [ k.toUpperCase(), v * 2 ])
        * // Map { "A": 2, "B": 4 }
@@ -4030,6 +4153,9 @@ export module SortedMap {
 
     /**
      * Creates a new Collection.Indexed.
+     *
+     * Note: `Collection.Indexed` is a conversion function and not a class, and
+     * does not use the `new` keyword during construction.
      */
     export function Indexed<T>(collection: Iterable<T>): Collection.Indexed<T>;
 
@@ -4093,10 +4219,10 @@ export module SortedMap {
        * second from each, etc.
        *
        * <!-- runkit:activate
-       *      { "preamble": "require('immutable@4.0.0-rc.9')"}
+       *      { "preamble": "require('immutable')"}
        * -->
        * ```js
-       * const { List } = require('immutable@4.0.0-rc.9')
+       * const { List } = require('immutable')
        * List([ 1, 2, 3 ]).interleave(List([ 'A', 'B', 'C' ]))
        * // List [ 1, "A", 2, "B", 3, "C"" ]
        * ```
@@ -4104,7 +4230,7 @@ export module SortedMap {
        * The shortest Collection stops interleave.
        *
        * <!-- runkit:activate
-       *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9')" }
+       *      { "preamble": "const { List } = require('immutable')" }
        * -->
        * ```js
        * List([ 1, 2, 3 ]).interleave(
@@ -4131,7 +4257,7 @@ export module SortedMap {
        *
        * <!-- runkit:activate -->
        * ```js
-       * const { List } = require('immutable@4.0.0-rc.9')
+       * const { List } = require('immutable')
        * List([ 'a', 'b', 'c', 'd' ]).splice(1, 2, 'q', 'r', 's')
        * // List [ "a", "q", "r", "s", "d" ]
        * ```
@@ -4155,7 +4281,7 @@ export module SortedMap {
        *
        *
        * <!-- runkit:activate
-       *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9')" }
+       *      { "preamble": "const { List } = require('immutable')" }
        * -->
        * ```js
        * const a = List([ 1, 2, 3 ]);
@@ -4188,7 +4314,7 @@ export module SortedMap {
        * collections by using a custom `zipper` function.
        *
        * <!-- runkit:activate
-       *      { "preamble": "const { List } = require('immutable@4.0.0-rc.9')" }
+       *      { "preamble": "const { List } = require('immutable')" }
        * -->
        * ```js
        * const a = List([ 1, 2, 3 ]);
@@ -4256,7 +4382,7 @@ export module SortedMap {
        * `mapper` function.
        *
        * ```js
-       * const { Collection } = require('immutable@4.0.0-rc.9')
+       * const { Collection } = require('immutable')
        * Collection.Indexed([1,2]).map(x => 10 * x)
        * // Seq [ 1, 2 ]
        * ```
@@ -4308,7 +4434,7 @@ export module SortedMap {
      * the value as both the first and second arguments to the provided function.
      *
      * ```js
-     * const { Collection } = require('immutable@4.0.0-rc.9')
+     * const { Collection } = require('immutable')
      * const seq = Collection.Set([ 'A', 'B', 'C' ])
      * // Seq { "A", "B", "C" }
      * seq.forEach((v, k) =>
@@ -4320,6 +4446,9 @@ export module SortedMap {
 
     /**
      * Similar to `Collection()`, but always returns a Collection.Set.
+     *
+     * Note: `Collection.Set` is a factory function and not a class, and does
+     * not use the `new` keyword during construction.
      */
     export function Set<T>(collection: Iterable<T>): Collection.Set<T>;
 
@@ -4407,13 +4536,20 @@ export module SortedMap {
    *
    *   * If an `Collection`, that same `Collection`.
    *   * If an Array-like, an `Collection.Indexed`.
-   *   * If an Object with an Iterator, an `Collection.Indexed`.
-   *   * If an Iterator, an `Collection.Indexed`.
+   *   * If an Object with an Iterator defined, an `Collection.Indexed`.
    *   * If an Object, an `Collection.Keyed`.
    *
    * This methods forces the conversion of Objects and Strings to Collections.
    * If you want to ensure that a Collection of one item is returned, use
    * `Seq.of`.
+   *
+   * Note: An Iterator itself will be treated as an object, becoming a `Seq.Keyed`,
+   * which is usually not what you want. You should turn your Iterator Object into
+   * an iterable object by defining a Symbol.iterator (or @@iterator) method which
+   * returns `this`.
+   *
+   * Note: `Collection` is a conversion function and not a class, and does not
+   * use the `new` keyword during construction.
    */
   export function Collection<I extends Collection<any, any>>(collection: I): I;
   export function Collection<T>(collection: Iterable<T>): Collection.Indexed<T>;
@@ -4440,7 +4576,7 @@ export module SortedMap {
      * lookup via a different instance.
      *
      * <!-- runkit:activate
-     *      { "preamble": "const { Set,  List } = require('immutable@4.0.0-rc.9')" }
+     *      { "preamble": "const { Set,  List } = require('immutable')" }
      * -->
      * ```js
      * const a = List([ 1, 2, 3 ]);
@@ -4487,15 +4623,20 @@ export module SortedMap {
     contains(value: V): boolean;
 
     /**
-     * The first value in the Collection.
+     * In case the `Collection` is not empty returns the first element of the
+     * `Collection`.
+     * In case the `Collection` is empty returns the optional default
+     * value if provided, if no default value is provided returns undefined.
      */
-    first(): V | undefined;
+    first<NSV>(notSetValue?: NSV): V | NSV;
 
     /**
-     * The last value in the Collection.
+     * In case the `Collection` is not empty returns the last element of the
+     * `Collection`.
+     * In case the `Collection` is empty returns the optional default
+     * value if provided, if no default value is provided returns undefined.
      */
-    last(): V | undefined;
-
+    last<NSV>(notSetValue?: NSV): V | NSV;
 
     // Reading deep values
 
@@ -4505,9 +4646,9 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map, List } = require('immutable@4.0.0-rc.9')
+     * const { Map, List } = require('immutable')
      * const deepData = Map({ x: List([ Map({ y: 123 }) ]) });
-     * getIn(deepData, ['x', 0, 'y']) // 123
+     * deepData.getIn(['x', 0, 'y']) // 123
      * ```
      *
      * Plain JavaScript Object or Arrays may be nested within an Immutable.js
@@ -4515,9 +4656,9 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map, List } = require('immutable@4.0.0-rc.9')
+     * const { Map, List } = require('immutable')
      * const deepData = Map({ x: [ { y: 123 } ] });
-     * getIn(deepData, ['x', 0, 'y']) // 123
+     * deepData.getIn(['x', 0, 'y']) // 123
      * ```
      */
     getIn(searchKeyPath: Iterable<any>, notSetValue?: any): any;
@@ -4538,7 +4679,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Seq } = require('immutable@4.0.0-rc.9')
+     * const { Seq } = require('immutable')
      *
      * function sum(collection) {
      *   return collection.reduce((sum, x) => sum + x, 0)
@@ -4652,7 +4793,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map, List } = require('immutable@4.0.0-rc.9')
+     * const { Map, List } = require('immutable')
      * var myMap = Map({ a: 'Apple', b: 'Banana' })
      * List(myMap) // List [ [ "a", "Apple" ], [ "b", "Banana" ] ]
      * myMap.toList() // List [ "Apple", "Banana" ]
@@ -4689,7 +4830,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Seq } = require('immutable@4.0.0-rc.9')
+     * const { Seq } = require('immutable')
      * const indexedSeq = Seq([ 'A', 'B', 'C' ])
      * // Seq [ "A", "B", "C" ]
      * indexedSeq.filter(v => v === 'B')
@@ -4770,7 +4911,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Collection } = require('immutable@4.0.0-rc.9')
+     * const { Collection } = require('immutable')
      * Collection({ a: 1, b: 2 }).map(x => 10 * x)
      * // Seq { "a": 10, "b": 20 }
      * ```
@@ -4797,7 +4938,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * Map({ a: 1, b: 2, c: 3, d: 4}).filter(x => x % 2 === 0)
      * // Map { "b": 2, "d": 4 }
      * ```
@@ -4820,7 +4961,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * Map({ a: 1, b: 2, c: 3, d: 4}).filterNot(x => x % 2 === 0)
      * // Map { "a": 1, "c": 3 }
      * ```
@@ -4857,7 +4998,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { Map } = require('immutable@4.0.0-rc.9')
+     * const { Map } = require('immutable')
      * Map({ "c": 3, "a": 1, "b": 2 }).sort((a, b) => {
      *   if (a < b) { return -1; }
      *   if (a > b) { return 1; }
@@ -4935,7 +5076,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List, Map } = require('immutable@4.0.0-rc.9')
+     * const { List, Map } = require('immutable')
      * const listOfMaps = List([
      *   Map({ v: 0 }),
      *   Map({ v: 1 }),
@@ -5022,7 +5163,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List } = require('immutable@4.0.0-rc.9')
+     * const { List } = require('immutable')
      * List([ 'dog', 'frog', 'cat', 'hat', 'god' ])
      *   .skipWhile(x => x.match(/g/))
      * // List [ "cat", "hat", "god"" ]
@@ -5039,7 +5180,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List } = require('immutable@4.0.0-rc.9')
+     * const { List } = require('immutable')
      * List([ 'dog', 'frog', 'cat', 'hat', 'god' ])
      *   .skipUntil(x => x.match(/hat/))
      * // List [ "hat", "god"" ]
@@ -5068,7 +5209,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List } = require('immutable@4.0.0-rc.9')
+     * const { List } = require('immutable')
      * List([ 'dog', 'frog', 'cat', 'hat', 'god' ])
      *   .takeWhile(x => x.match(/o/))
      * // List [ "dog", "frog" ]
@@ -5085,7 +5226,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List } = require('immutable@4.0.0-rc.9')
+     * const { List } = require('immutable')
      * List([ 'dog', 'frog', 'cat', 'hat', 'god' ])
      *   .takeUntil(x => x.match(/at/))
      * // List [ "dog", "frog" ]
@@ -5403,7 +5544,7 @@ export module SortedMap {
      *
      * <!-- runkit:activate -->
      * ```js
-     * const { List, Set } = require('immutable@4.0.0-rc.9');
+     * const { List, Set } = require('immutable');
      * const a = List([ 1, 2, 3 ]);
      * const b = List([ 1, 2, 3 ]);
      * assert.notStrictEqual(a, b); // different instances
@@ -5434,7 +5575,7 @@ export module SortedMap {
    * If a `reviver` is optionally provided, it will be called with every
    * collection as a Seq (beginning with the most nested collections
    * and proceeding to the top-level collection itself), along with the key
-   * refering to each collection and the parent JS object provided as `this`.
+   * referring to each collection and the parent JS object provided as `this`.
    * For the top level, object, the key will be `""`. This `reviver` is expected
    * to return a new Immutable Collection, allowing for custom conversions from
    * deep JS objects. Finally, a `path` is provided which is the sequence of
@@ -5447,9 +5588,9 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { fromJS, isKeyed } = require('immutable@4.0.0-rc.9')
+   * const { fromJS, isKeyed } = require('immutable')
    * function (key, value) {
-   *   return isKeyed(value) ? value.Map() : value.toList()
+   *   return isKeyed(value) ? value.toMap() : value.toList()
    * }
    * ```
    *
@@ -5461,7 +5602,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { fromJS, isKeyed } = require('immutable@4.0.0-rc.9')
+   * const { fromJS, isKeyed } = require('immutable')
    * fromJS({ a: {b: [10, 20, 30]}, c: 40}, function (key, value, path) {
    *   console.log(key, value, path)
    *   return isKeyed(value) ? value.toOrderedMap() : value.toList()
@@ -5478,7 +5619,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { Map } = require('immutable@4.0.0-rc.9')
+   * const { Map } = require('immutable')
    * let obj = { 1: "one" };
    * Object.keys(obj); // [ "1" ]
    * assert.equal(obj["1"], obj[1]); // "one" === "one"
@@ -5513,7 +5654,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { Map, is } = require('immutable@4.0.0-rc.9')
+   * const { Map, is } = require('immutable')
    * const map1 = Map({ a: 1, b: 1, c: 1 })
    * const map2 = Map({ a: 1, b: 1, c: 1 })
    * assert.equal(map1 !== map2, true)
@@ -5535,7 +5676,7 @@ export module SortedMap {
    * two values are equivalent and is used to determine how to store those
    * values. Provided with any value, `hash()` will return a 31-bit integer.
    *
-   * When designing Objects which may be equal, it's important than when a
+   * When designing Objects which may be equal, it's important that when a
    * `.equals()` method returns true, that both values `.hashCode()` method
    * return the same value. `hash()` may be used to produce those values.
    *
@@ -5561,7 +5702,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { isImmutable, Map, List, Stack } = require('immutable@4.0.0-rc.9');
+   * const { isImmutable, Map, List, Stack } = require('immutable');
    * isImmutable([]); // false
    * isImmutable({}); // false
    * isImmutable(Map()); // true
@@ -5577,7 +5718,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { isCollection, Map, List, Stack } = require('immutable@4.0.0-rc.9');
+   * const { isCollection, Map, List, Stack } = require('immutable');
    * isCollection([]); // false
    * isCollection({}); // false
    * isCollection(Map()); // true
@@ -5592,7 +5733,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { isKeyed, Map, List, Stack } = require('immutable@4.0.0-rc.9');
+   * const { isKeyed, Map, List, Stack } = require('immutable');
    * isKeyed([]); // false
    * isKeyed({}); // false
    * isKeyed(Map()); // true
@@ -5607,7 +5748,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { isIndexed, Map, List, Stack, Set } = require('immutable@4.0.0-rc.9');
+   * const { isIndexed, Map, List, Stack, Set } = require('immutable');
    * isIndexed([]); // false
    * isIndexed({}); // false
    * isIndexed(Map()); // false
@@ -5623,7 +5764,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { isAssociative, Map, List, Stack, Set } = require('immutable@4.0.0-rc.9');
+   * const { isAssociative, Map, List, Stack, Set } = require('immutable');
    * isAssociative([]); // false
    * isAssociative({}); // false
    * isAssociative(Map()); // true
@@ -5640,7 +5781,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { isOrdered, Map, OrderedMap, List, Set } = require('immutable@4.0.0-rc.9');
+   * const { isOrdered, Map, OrderedMap, List, Set } = require('immutable');
    * isOrdered([]); // false
    * isOrdered({}); // false
    * isOrdered(Map()); // false
@@ -5660,6 +5801,53 @@ export module SortedMap {
    */
   export function isValueObject(maybeValue: any): maybeValue is ValueObject;
 
+
+  /**
+   * True if `maybeSeq` is a Seq.
+   */
+  export function isSeq(maybeSeq: any): maybeSeq is Seq.Indexed<any> | Seq.Keyed<any, any> | Seq.Set<any>;
+
+  /**
+   * True if `maybeList` is a List.
+   */
+  export function isList(maybeList: any): maybeList is List<any>;
+
+  /**
+   * True if `maybeMap` is a Map.
+   *
+   * Also true for OrderedMaps.
+   */
+  export function isMap(maybeMap: any): maybeMap is Map<any, any>;
+
+  /**
+   * True if `maybeOrderedMap` is an OrderedMap.
+   */
+  export function isOrderedMap(maybeOrderedMap: any): maybeOrderedMap is OrderedMap<any, any>;
+
+  /**
+   * True if `maybeStack` is a Stack.
+   */
+  export function isStack(maybeStack: any): maybeStack is Stack<any>;
+
+  /**
+   * True if `maybeSet` is a Set.
+   *
+   * Also true for OrderedSets.
+   */
+  export function isSet(maybeSet: any): maybeSet is Set<any>;
+
+  /**
+   * True if `maybeOrderedSet` is an OrderedSet.
+   */
+  export function isOrderedSet(maybeOrderedSet: any): maybeOrderedSet is OrderedSet<any>;
+
+  /**
+   * True if `maybeRecord` is a Record.
+   */
+  export function isRecord(maybeRecord: any): maybeRecord is Record<any>;
+
+
+
   /**
    * Returns the value within the provided collection associated with the
    * provided key, or notSetValue if the key is not defined in the collection.
@@ -5669,7 +5857,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { get } = require('immutable@4.0.0-rc.9')
+   * const { get } = require('immutable')
    * get([ 'dog', 'frog', 'cat' ], 2) // 'frog'
    * get({ x: 123, y: 456 }, 'x') // 123
    * get({ x: 123, y: 456 }, 'z', 'ifNotSet') // 'ifNotSet'
@@ -5693,7 +5881,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { has } = require('immutable@4.0.0-rc.9')
+   * const { has } = require('immutable')
    * has([ 'dog', 'frog', 'cat' ], 2) // true
    * has([ 'dog', 'frog', 'cat' ], 5) // false
    * has({ x: 123, y: 456 }, 'x') // true
@@ -5711,7 +5899,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { remove } = require('immutable@4.0.0-rc.9')
+   * const { remove } = require('immutable')
    * const originalArray = [ 'dog', 'frog', 'cat' ]
    * remove(originalArray, 1) // [ 'dog', 'cat' ]
    * console.log(originalArray) // [ 'dog', 'frog', 'cat' ]
@@ -5736,7 +5924,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { set } = require('immutable@4.0.0-rc.9')
+   * const { set } = require('immutable')
    * const originalArray = [ 'dog', 'frog', 'cat' ]
    * set(originalArray, 1, 'cow') // [ 'dog', 'cow', 'cat' ]
    * console.log(originalArray) // [ 'dog', 'frog', 'cat' ]
@@ -5761,12 +5949,12 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { update } = require('immutable@4.0.0-rc.9')
+   * const { update } = require('immutable')
    * const originalArray = [ 'dog', 'frog', 'cat' ]
    * update(originalArray, 1, val => val.toUpperCase()) // [ 'dog', 'FROG', 'cat' ]
    * console.log(originalArray) // [ 'dog', 'frog', 'cat' ]
    * const originalObject = { x: 123, y: 456 }
-   * set(originalObject, 'x', val => val * 6) // { x: 738, y: 456 }
+   * update(originalObject, 'x', val => val * 6) // { x: 738, y: 456 }
    * console.log(originalObject) // { x: 123, y: 456 }
    * ```
    */
@@ -5790,7 +5978,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { getIn } = require('immutable@4.0.0-rc.9')
+   * const { getIn } = require('immutable')
    * getIn({ x: { y: { z: 123 }}}, ['x', 'y', 'z']) // 123
    * getIn({ x: { y: { z: 123 }}}, ['x', 'q', 'p'], 'ifNotSet') // 'ifNotSet'
    * ```
@@ -5805,7 +5993,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { hasIn } = require('immutable@4.0.0-rc.9')
+   * const { hasIn } = require('immutable')
    * hasIn({ x: { y: { z: 123 }}}, ['x', 'y', 'z']) // true
    * hasIn({ x: { y: { z: 123 }}}, ['x', 'q', 'p']) // false
    * ```
@@ -5820,7 +6008,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { removeIn } = require('immutable@4.0.0-rc.9')
+   * const { removeIn } = require('immutable')
    * const original = { x: { y: { z: 123 }}}
    * removeIn(original, ['x', 'y', 'z']) // { x: { y: {}}}
    * console.log(original) // { x: { y: { z: 123 }}}
@@ -5837,7 +6025,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { setIn } = require('immutable@4.0.0-rc.9')
+   * const { setIn } = require('immutable')
    * const original = { x: { y: { z: 123 }}}
    * setIn(original, ['x', 'y', 'z'], 456) // { x: { y: { z: 456 }}}
    * console.log(original) // { x: { y: { z: 123 }}}
@@ -5854,9 +6042,9 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { setIn } = require('immutable@4.0.0-rc.9')
+   * const { updateIn } = require('immutable')
    * const original = { x: { y: { z: 123 }}}
-   * setIn(original, ['x', 'y', 'z'], val => val * 6) // { x: { y: { z: 738 }}}
+   * updateIn(original, ['x', 'y', 'z'], val => val * 6) // { x: { y: { z: 738 }}}
    * console.log(original) // { x: { y: { z: 123 }}}
    * ```
    */
@@ -5871,10 +6059,10 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { merge } = require('immutable@4.0.0-rc.9')
+   * const { merge } = require('immutable')
    * const original = { x: 123, y: 456 }
    * merge(original, { y: 789, z: 'abc' }) // { x: 123, y: 789, z: 'abc' }
-   * console.log(original) // { x: { y: { z: 123 }}}
+   * console.log(original) // { x: 123, y: 456 }
    * ```
    */
   export function merge<C>(
@@ -5891,14 +6079,14 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { mergeWith } = require('immutable@4.0.0-rc.9')
+   * const { mergeWith } = require('immutable')
    * const original = { x: 123, y: 456 }
    * mergeWith(
    *   (oldVal, newVal) => oldVal + newVal,
    *   original,
    *   { y: 789, z: 'abc' }
    * ) // { x: 123, y: 1245, z: 'abc' }
-   * console.log(original) // { x: { y: { z: 123 }}}
+   * console.log(original) // { x: 123, y: 456 }
    * ```
    */
   export function mergeWith<C>(
@@ -5916,9 +6104,9 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { merge } = require('immutable@4.0.0-rc.9')
+   * const { mergeDeep } = require('immutable')
    * const original = { x: { y: 123 }}
-   * merge(original, { x: { z: 456 }}) // { x: { y: 123, z: 456 }}
+   * mergeDeep(original, { x: { z: 456 }}) // { x: { y: 123, z: 456 }}
    * console.log(original) // { x: { y: 123 }}
    * ```
    */
@@ -5937,7 +6125,7 @@ export module SortedMap {
    *
    * <!-- runkit:activate -->
    * ```js
-   * const { merge } = require('immutable@4.0.0-rc.9')
+   * const { mergeDeepWith } = require('immutable')
    * const original = { x: { y: 123 }}
    * mergeDeepWith(
    *   (oldVal, newVal) => oldVal + newVal,

@@ -19,6 +19,10 @@ Facebook has a [bounty program](https://www.facebook.com/whitehat/) for the safe
 disclosure of security bugs. In those cases, please go through the process
 outlined on that page and do not file a public issue.
 
+# Code of Conduct
+
+The code of conduct is described in [`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)
+
 # Pull Requests
 
 All active development of Immutable JS happens on GitHub. We actively welcome
@@ -53,6 +57,50 @@ Complete your CLA here: <https://code.facebook.com/cla>
 * Use semicolons;
 * Trailing commas,
 * Avd abbr wrds.
+
+# Functionality Testing
+
+Run the following command to build the library and test functionality:
+```bash
+npm run test
+```
+
+## Performance Regression Testing
+
+Performance tests run against master and your feature branch.
+Make sure to commit your changes in your local feature branch before proceeding.
+
+These commands assume you have a remote named `upstream` amd that you do not already have a local `master` branch:
+```bash
+git fetch upstream
+git checkout -b master upstream/master
+```
+
+These commands build `dist` and commit `dist/immutable.js` to `master` so that the regression tests can run. 
+```bash
+npm run test
+git add dist/immutable.js -f
+git commit -m 'perf test prerequisite.'
+```
+
+Switch back to your feature branch, and run the following command to run regression tests:
+```bash
+npm run test
+npm run perf
+```
+
+Sample output:
+```bash
+> immutable@4.0.0-rc.9 perf ~/github.com/facebook/immutable-js
+> node ./resources/bench.js
+
+List > builds from array of 2
+  Old:   678,974   683,071   687,218 ops/sec
+  New:   669,012   673,553   678,157 ops/sec
+  compare: 1 -1
+  diff: -1.4%
+  rme: 0.64%
+```
 
 ## License
 

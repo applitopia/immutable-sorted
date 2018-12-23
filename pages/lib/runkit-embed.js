@@ -11,19 +11,29 @@ global.runIt = function runIt(button) {
 
   const options = JSON.parse(unescape(button.dataset.options));
 
+  function withCorrectVersion(code) {
+    return code.replace(
+      /require\('immutable'\)/g,
+      "require('immutable@4.0.0-rc.9')"
+    );
+  }
+
   global.RunKit.createNotebook({
     element: container,
     nodeVersion: options.nodeVersion || '*',
-    preamble:
+    preamble: withCorrectVersion(
       'const assert = (' +
-      makeAssert +
-      ')(require("immutable@4.0.0-rc.9"));' +
-      (options.preamble || ''),
-    source: codeElement.textContent.replace(/\n(>[^\n]*\n?)+$/g, ''),
+        makeAssert +
+        ")(require('immutable'));" +
+        (options.preamble || '')
+    ),
+    source: withCorrectVersion(
+      codeElement.textContent.replace(/\n(>[^\n]*\n?)+$/g, '')
+    ),
     minHeight: '52px',
     onLoad: function(notebook) {
       notebook.evaluate();
-    }
+    },
   });
 };
 
@@ -78,8 +88,12 @@ function makeAssert(I) {
   function message(lhs, rhs, same, identical) {
     var result = compare(lhs, rhs, same, identical);
     var comparison = result
-      ? identical ? 'strict equal to' : 'does equal'
-      : identical ? 'not strict equal to' : 'does not equal';
+      ? identical
+        ? 'strict equal to'
+        : 'does equal'
+      : identical
+        ? 'not strict equal to'
+        : 'does not equal';
     var className = result === same ? 'success' : 'failure';
     var lhsString = isIterable(lhs) ? lhs + '' : JSON.stringify(lhs);
     var rhsString = isIterable(rhs) ? rhs + '' : JSON.stringify(rhs);
