@@ -24,17 +24,14 @@ var MASK = SIZE - 1;
 var NOT_SET = {};
 
 // Boolean references, Rough equivalent of `bool &`.
-var CHANGE_LENGTH = { value: false };
-var DID_ALTER = { value: false };
-var DID_MATCH = { value: false };
-
-function MakeRef(ref) {
-  ref.value = false;
-  return ref;
+function MakeRef() {
+  return { value: false };
 }
 
 function SetRef(ref) {
-  ref && (ref.value = true);
+  if (ref) {
+    ref.value = true;
+  }
 }
 
 function GetRef(ref) {
@@ -108,52 +105,28 @@ function isNeg(value) {
   return value < 0 || (value === 0 && 1 / value === -Infinity);
 }
 
-function isImmutable(maybeImmutable) {
-  return isCollection(maybeImmutable) || isRecord(maybeImmutable);
-}
+// Note: value is unchanged to not break immutable-devtools.
+var IS_COLLECTION_SYMBOL = '@@__IMMUTABLE_ITERABLE__@@';
 
 function isCollection(maybeCollection) {
-  return !!(maybeCollection && maybeCollection[IS_ITERABLE_SENTINEL]);
+  return Boolean(maybeCollection && maybeCollection[IS_COLLECTION_SYMBOL]);
 }
+
+var IS_KEYED_SYMBOL = '@@__IMMUTABLE_KEYED__@@';
 
 function isKeyed(maybeKeyed) {
-  return !!(maybeKeyed && maybeKeyed[IS_KEYED_SENTINEL]);
+  return Boolean(maybeKeyed && maybeKeyed[IS_KEYED_SYMBOL]);
 }
 
+var IS_INDEXED_SYMBOL = '@@__IMMUTABLE_INDEXED__@@';
+
 function isIndexed(maybeIndexed) {
-  return !!(maybeIndexed && maybeIndexed[IS_INDEXED_SENTINEL]);
+  return Boolean(maybeIndexed && maybeIndexed[IS_INDEXED_SYMBOL]);
 }
 
 function isAssociative(maybeAssociative) {
   return isKeyed(maybeAssociative) || isIndexed(maybeAssociative);
 }
-
-function isOrdered(maybeOrdered) {
-  return !!(maybeOrdered && maybeOrdered[IS_ORDERED_SENTINEL]);
-}
-
-function isRecord(maybeRecord) {
-  return !!(maybeRecord && maybeRecord[IS_RECORD_SENTINEL]);
-}
-
-function isValueObject(maybeValue) {
-  return !!(
-    maybeValue &&
-    typeof maybeValue.equals === 'function' &&
-    typeof maybeValue.hashCode === 'function'
-  );
-}
-
-function isSorted(maybeSorted) {
-  return !!(maybeSorted && maybeSorted[IS_SORTED_SENTINEL]);
-}
-
-var IS_ITERABLE_SENTINEL = '@@__IMMUTABLE_ITERABLE__@@';
-var IS_KEYED_SENTINEL = '@@__IMMUTABLE_KEYED__@@';
-var IS_INDEXED_SENTINEL = '@@__IMMUTABLE_INDEXED__@@';
-var IS_ORDERED_SENTINEL = '@@__IMMUTABLE_ORDERED__@@';
-var IS_RECORD_SENTINEL = '@@__IMMUTABLE_RECORD__@@';
-var IS_SORTED_SENTINEL = '@@__IMMUTABLE_SORTED__@@';
 
 var Collection = function Collection(value) {
   return isCollection(value) ? value : Seq(value);
@@ -199,6 +172,28 @@ Collection.Keyed = KeyedCollection;
 Collection.Indexed = IndexedCollection;
 Collection.Set = SetCollection;
 
+var IS_SEQ_SYMBOL = '@@__IMMUTABLE_SEQ__@@';
+
+function isSeq(maybeSeq) {
+  return Boolean(maybeSeq && maybeSeq[IS_SEQ_SYMBOL]);
+}
+
+var IS_RECORD_SYMBOL = '@@__IMMUTABLE_RECORD__@@';
+
+function isRecord(maybeRecord) {
+  return Boolean(maybeRecord && maybeRecord[IS_RECORD_SYMBOL]);
+}
+
+function isImmutable(maybeImmutable) {
+  return isCollection(maybeImmutable) || isRecord(maybeImmutable);
+}
+
+var IS_ORDERED_SYMBOL = '@@__IMMUTABLE_ORDERED__@@';
+
+function isOrdered(maybeOrdered) {
+  return Boolean(maybeOrdered && maybeOrdered[IS_ORDERED_SYMBOL]);
+}
+
 var ITERATE_KEYS = 0;
 var ITERATE_VALUES = 1;
 var ITERATE_ENTRIES = 2;
@@ -233,7 +228,7 @@ function iteratorValue(type, k, v, iteratorResult) {
     ? (iteratorResult.value = value)
     : (iteratorResult = {
         value: value,
-        done: false
+        done: false,
       });
   return iteratorResult;
 }
@@ -268,7 +263,22 @@ function getIteratorFn(iterable) {
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 
 function isArrayLike(value) {
-  return value && typeof value.length === 'number';
+  if (Array.isArray(value) || typeof value === 'string') {
+    return true;
+  }
+
+  return (
+    value &&
+    typeof value === 'object' &&
+    Number.isInteger(value.length) &&
+    value.length >= 0 &&
+    (value.length === 0
+      ? // Only {length: 0} is considered Array-like.
+        Object.keys(value).length === 1
+      : // An object is only Array-like if it has a property where the last value
+        // in the array-like may be found (which could be undefined).
+        value.hasOwnProperty(value.length - 1))
+  );
 }
 
 var Seq = (function (Collection$$1) {
@@ -417,9 +427,7 @@ Seq.Keyed = KeyedSeq;
 Seq.Set = SetSeq;
 Seq.Indexed = IndexedSeq;
 
-var IS_SEQ_SENTINEL = '@@__IMMUTABLE_SEQ__@@';
-
-Seq.prototype[IS_SEQ_SENTINEL] = true;
+Seq.prototype[IS_SEQ_SYMBOL] = true;
 
 // #pragma Root Sequences
 
@@ -523,7 +531,7 @@ var ObjectSeq = (function (KeyedSeq) {
 
   return ObjectSeq;
 }(KeyedSeq));
-ObjectSeq.prototype[IS_ORDERED_SENTINEL] = true;
+ObjectSeq.prototype[IS_ORDERED_SYMBOL] = true;
 
 var CollectionSeq = (function (IndexedSeq) {
   function CollectionSeq(collection) {
@@ -574,68 +582,7 @@ var CollectionSeq = (function (IndexedSeq) {
   return CollectionSeq;
 }(IndexedSeq));
 
-var IteratorSeq = (function (IndexedSeq) {
-  function IteratorSeq(iterator) {
-    this._iterator = iterator;
-    this._iteratorCache = [];
-  }
-
-  if ( IndexedSeq ) IteratorSeq.__proto__ = IndexedSeq;
-  IteratorSeq.prototype = Object.create( IndexedSeq && IndexedSeq.prototype );
-  IteratorSeq.prototype.constructor = IteratorSeq;
-
-  IteratorSeq.prototype.__iterateUncached = function __iterateUncached (fn, reverse) {
-    var this$1 = this;
-
-    if (reverse) {
-      return this.cacheResult().__iterate(fn, reverse);
-    }
-    var iterator = this._iterator;
-    var cache = this._iteratorCache;
-    var iterations = 0;
-    while (iterations < cache.length) {
-      if (fn(cache[iterations], iterations++, this$1) === false) {
-        return iterations;
-      }
-    }
-    var step;
-    while (!(step = iterator.next()).done) {
-      var val = step.value;
-      cache[iterations] = val;
-      if (fn(val, iterations++, this$1) === false) {
-        break;
-      }
-    }
-    return iterations;
-  };
-
-  IteratorSeq.prototype.__iteratorUncached = function __iteratorUncached (type, reverse) {
-    if (reverse) {
-      return this.cacheResult().__iterator(type, reverse);
-    }
-    var iterator = this._iterator;
-    var cache = this._iteratorCache;
-    var iterations = 0;
-    return new Iterator(function () {
-      if (iterations >= cache.length) {
-        var step = iterator.next();
-        if (step.done) {
-          return step;
-        }
-        cache[iterations] = step.value;
-      }
-      return iteratorValue(type, iterations, cache[iterations++]);
-    });
-  };
-
-  return IteratorSeq;
-}(IndexedSeq));
-
 // # pragma Helper functions
-
-function isSeq(maybeSeq) {
-  return !!(maybeSeq && maybeSeq[IS_SEQ_SENTINEL]);
-}
 
 var EMPTY_SEQ;
 
@@ -646,9 +593,7 @@ function emptySequence() {
 function keyedSeqFromValue(value) {
   var seq = Array.isArray(value)
     ? new ArraySeq(value)
-    : isIterator(value)
-      ? new IteratorSeq(value)
-      : hasIterator(value) ? new CollectionSeq(value) : undefined;
+    : hasIterator(value) ? new CollectionSeq(value) : undefined;
   if (seq) {
     return seq.fromEntrySeq();
   }
@@ -687,9 +632,25 @@ function seqFromValue(value) {
 function maybeIndexedSeqFromValue(value) {
   return isArrayLike(value)
     ? new ArraySeq(value)
-    : isIterator(value)
-      ? new IteratorSeq(value)
-      : hasIterator(value) ? new CollectionSeq(value) : undefined;
+    : hasIterator(value) ? new CollectionSeq(value) : undefined;
+}
+
+var IS_MAP_SYMBOL = '@@__IMMUTABLE_MAP__@@';
+
+function isMap(maybeMap) {
+  return Boolean(maybeMap && maybeMap[IS_MAP_SYMBOL]);
+}
+
+function isOrderedMap(maybeOrderedMap) {
+  return isMap(maybeOrderedMap) && isOrdered(maybeOrderedMap);
+}
+
+function isValueObject(maybeValue) {
+  return Boolean(
+    maybeValue &&
+      typeof maybeValue.equals === 'function' &&
+      typeof maybeValue.hashCode === 'function'
+  );
 }
 
 /**
@@ -773,6 +734,19 @@ function is(valueA, valueB) {
   );
 }
 
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+var IS_SORTED_SYMBOL = '@@__IMMUTABLE_SORTED__@@';
+
+function isSorted(maybeSorted) {
+  return Boolean(maybeSorted && maybeSorted[IS_SORTED_SYMBOL]);
+}
+
 var imul =
   typeof Math.imul === 'function' && Math.imul(0xffffffff, 2) === -2
     ? Math.imul
@@ -793,50 +767,58 @@ function smi(i32) {
   return ((i32 >>> 1) & 0x40000000) | (i32 & 0xbfffffff);
 }
 
+var defaultValueOf = Object.prototype.valueOf;
+
 function hash(o) {
-  if (o === false || o === null || o === undefined) {
+  switch (typeof o) {
+    case 'boolean':
+      // The hash values for built-in constants are a 1 value for each 5-byte
+      // shift region expect for the first, which encodes the value. This
+      // reduces the odds of a hash collision for these common values.
+      return o ? 0x42108421 : 0x42108420;
+    case 'number':
+      return hashNumber(o);
+    case 'string':
+      return o.length > STRING_HASH_CACHE_MIN_STRLEN
+        ? cachedHashString(o)
+        : hashString(o);
+    case 'object':
+    case 'function':
+      if (o === null) {
+        return 0x42108422;
+      }
+      if (typeof o.hashCode === 'function') {
+        // Drop any high bits from accidentally long hash codes.
+        return smi(o.hashCode(o));
+      }
+      if (o.valueOf !== defaultValueOf && typeof o.valueOf === 'function') {
+        o = o.valueOf(o);
+      }
+      return hashJSObj(o);
+    case 'undefined':
+      return 0x42108423;
+    default:
+      if (typeof o.toString === 'function') {
+        return hashString(o.toString());
+      }
+      throw new Error('Value type ' + typeof o + ' cannot be hashed.');
+  }
+}
+
+// Compress arbitrarily large numbers into smi hashes.
+function hashNumber(n) {
+  if (n !== n || n === Infinity) {
     return 0;
   }
-  if (typeof o.valueOf === 'function') {
-    o = o.valueOf();
-    if (o === false || o === null || o === undefined) {
-      return 0;
-    }
+  var hash = n | 0;
+  if (hash !== n) {
+    hash ^= n * 0xffffffff;
   }
-  if (o === true) {
-    return 1;
+  while (n > 0xffffffff) {
+    n /= 0xffffffff;
+    hash ^= n;
   }
-  var type = typeof o;
-  if (type === 'number') {
-    if (o !== o || o === Infinity) {
-      return 0;
-    }
-    var h = o | 0;
-    if (h !== o) {
-      h ^= o * 0xffffffff;
-    }
-    while (o > 0xffffffff) {
-      o /= 0xffffffff;
-      h ^= o;
-    }
-    return smi(h);
-  }
-  if (type === 'string') {
-    return o.length > STRING_HASH_CACHE_MIN_STRLEN
-      ? cachedHashString(o)
-      : hashString(o);
-  }
-  if (typeof o.hashCode === 'function') {
-    // Drop any high bits from accidentally long hash codes.
-    return smi(o.hashCode());
-  }
-  if (type === 'object') {
-    return hashJSObj(o);
-  }
-  if (typeof o.toString === 'function') {
-    return hashString(o.toString());
-  }
-  throw new Error('Value type ' + type + ' cannot be hashed.');
+  return smi(hash);
 }
 
 function cachedHashString(string) {
@@ -908,7 +890,7 @@ function hashJSObj(obj) {
       enumerable: false,
       configurable: false,
       writable: false,
-      value: hashed
+      value: hashed,
     });
   } else if (
     obj.propertyIsEnumerable !== undefined &&
@@ -1119,7 +1101,7 @@ var ToKeyedSequence = (function (KeyedSeq$$1) {
 
   return ToKeyedSequence;
 }(KeyedSeq));
-ToKeyedSequence.prototype[IS_ORDERED_SENTINEL] = true;
+ToKeyedSequence.prototype[IS_ORDERED_SYMBOL] = true;
 
 var ToIndexedSequence = (function (IndexedSeq$$1) {
   function ToIndexedSequence(iter) {
@@ -1454,7 +1436,7 @@ function groupByFactory(collection, grouper, context) {
     );
   });
   var coerce = collectionClass(collection);
-  return groups.map(function (arr) { return reify(collection, coerce(arr)); });
+  return groups.map(function (arr) { return reify(collection, coerce(arr)); }).asImmutable();
 }
 
 function sliceFactory(collection, begin, end, useKeys) {
@@ -2127,7 +2109,9 @@ function coerceKeyPath(keyPath) {
 
 function isPlainObj(value) {
   return (
-    value && (value.constructor === Object || value.constructor === undefined)
+    value &&
+    (typeof value.constructor !== 'function' ||
+      value.constructor.name === 'Object')
   );
 }
 
@@ -2136,7 +2120,10 @@ function isPlainObj(value) {
  * provided by Immutable.js or a plain Array or Object.
  */
 function isDataStructure(value) {
-  return isImmutable(value) || Array.isArray(value) || isPlainObj(value);
+  return (
+    typeof value === 'object' &&
+    (isImmutable(value) || Array.isArray(value) || isPlainObj(value))
+  );
 }
 
 /**
@@ -2327,6 +2314,9 @@ function mergeWith(merger) {
   var iters = [], len = arguments.length - 1;
   while ( len-- > 0 ) iters[ len ] = arguments[ len + 1 ];
 
+  if (typeof merger !== 'function') {
+    throw new TypeError('Invalid merger function: ' + merger);
+  }
   return mergeIntoKeyedWith(this, iters, merger);
 }
 
@@ -2341,7 +2331,11 @@ function mergeIntoKeyedWith(collection, collections, merger) {
   if (iters.length === 0) {
     return collection;
   }
-  if (collection.size === 0 && !collection.__ownerID && iters.length === 1) {
+  if (
+    collection.toSeq().size === 0 &&
+    !collection.__ownerID &&
+    iters.length === 1
+  ) {
     return collection.constructor(iters[0]);
   }
   return collection.withMutations(function (collection) {
@@ -2402,9 +2396,11 @@ function mergeWithSources(collection, sources, merger) {
     );
   }
   if (isImmutable(collection)) {
-    return collection.mergeWith
+    return typeof merger === 'function' && collection.mergeWith
       ? collection.mergeWith.apply(collection, [ merger ].concat( sources ))
-      : collection.concat.apply(collection, sources);
+      : collection.merge
+        ? collection.merge.apply(collection, sources)
+        : collection.concat.apply(collection, sources);
   }
   var isArray = Array.isArray(collection);
   var merged = collection;
@@ -2582,6 +2578,14 @@ var Map = (function (KeyedCollection$$1) {
     return OrderedMap(sortFactory(this, comparator, mapper));
   };
 
+  Map.prototype.map = function map (mapper, context) {
+    return this.withMutations(function (map) {
+      map.forEach(function (value, key) {
+        map.set(key, mapper.call(context, value, key, map));
+      });
+    });
+  };
+
   // @pragma Mutability
 
   Map.prototype.__iterator = function __iterator (type, reverse) {
@@ -2618,24 +2622,17 @@ var Map = (function (KeyedCollection$$1) {
   return Map;
 }(KeyedCollection));
 
-function isMap(maybeMap) {
-  return !!(maybeMap && maybeMap[IS_MAP_SENTINEL]);
-}
-
 Map.isMap = isMap;
 
-var IS_MAP_SENTINEL = '@@__IMMUTABLE_MAP__@@';
-
 var MapPrototype = Map.prototype;
-MapPrototype[IS_MAP_SENTINEL] = true;
+MapPrototype[IS_MAP_SYMBOL] = true;
 MapPrototype[DELETE] = MapPrototype.remove;
 MapPrototype.removeAll = MapPrototype.deleteAll;
-MapPrototype.concat = MapPrototype.merge;
 MapPrototype.setIn = setIn$$1;
 MapPrototype.removeIn = MapPrototype.deleteIn = deleteIn;
 MapPrototype.update = update$$1;
 MapPrototype.updateIn = updateIn$1;
-MapPrototype.merge = merge;
+MapPrototype.merge = MapPrototype.concat = merge;
 MapPrototype.mergeWith = mergeWith;
 MapPrototype.mergeDeep = mergeDeep;
 MapPrototype.mergeDeepWith = mergeDeepWith;
@@ -3078,7 +3075,7 @@ function mapIteratorFrame(node, prev) {
   return {
     node: node,
     index: 0,
-    __prev: prev
+    __prev: prev,
   };
 }
 
@@ -3107,8 +3104,8 @@ function updateMap(map, k, v) {
     newSize = 1;
     newRoot = new ArrayMapNode(map.__ownerID, [[k, v]]);
   } else {
-    var didChangeSize = MakeRef(CHANGE_LENGTH);
-    var didAlter = MakeRef(DID_ALTER);
+    var didChangeSize = MakeRef();
+    var didAlter = MakeRef();
     newRoot = updateNode(
       map._root,
       map.__ownerID,
@@ -3278,6 +3275,12 @@ var MAX_ARRAY_MAP_SIZE = SIZE / 4;
 var MAX_BITMAP_INDEXED_SIZE = SIZE / 2;
 var MIN_HASH_ARRAY_MAP_SIZE = SIZE / 4;
 
+var IS_LIST_SYMBOL = '@@__IMMUTABLE_LIST__@@';
+
+function isList(maybeList) {
+  return Boolean(maybeList && maybeList[IS_LIST_SYMBOL]);
+}
+
 var List = (function (IndexedCollection$$1) {
   function List(value) {
     var empty = emptyList();
@@ -3420,6 +3423,16 @@ var List = (function (IndexedCollection$$1) {
     return setListBounds(this, 0, size);
   };
 
+  List.prototype.map = function map (mapper, context) {
+    var this$1 = this;
+
+    return this.withMutations(function (list) {
+      for (var i = 0; i < this$1.size; i++) {
+        list.set(i, mapper.call(context, list.get(i), i, list));
+      }
+    });
+  };
+
   // @pragma Iteration
 
   List.prototype.slice = function slice (begin, end) {
@@ -3485,16 +3498,10 @@ var List = (function (IndexedCollection$$1) {
   return List;
 }(IndexedCollection));
 
-function isList(maybeList) {
-  return !!(maybeList && maybeList[IS_LIST_SENTINEL]);
-}
-
 List.isList = isList;
 
-var IS_LIST_SENTINEL = '@@__IMMUTABLE_LIST__@@';
-
 var ListPrototype = List.prototype;
-ListPrototype[IS_LIST_SENTINEL] = true;
+ListPrototype[IS_LIST_SYMBOL] = true;
 ListPrototype[DELETE] = ListPrototype.remove;
 ListPrototype.merge = ListPrototype.concat;
 ListPrototype.setIn = setIn$$1;
@@ -3682,7 +3689,7 @@ function updateList(list, index, value) {
 
   var newTail = list._tail;
   var newRoot = list._root;
-  var didAlter = MakeRef(DID_ALTER);
+  var didAlter = MakeRef();
   if (index >= getTailOffset(list._capacity)) {
     newTail = updateVNode(newTail, list.__ownerID, 0, index, value, didAlter);
   } else {
@@ -3741,7 +3748,9 @@ function updateVNode(node, ownerID, level, index, value, didAlter) {
     return node;
   }
 
-  SetRef(didAlter);
+  if (didAlter) {
+    SetRef(didAlter);
+  }
 
   newNode = editableVNode(node, ownerID);
   if (value === undefined && idx === newNode.array.length - 1) {
@@ -4013,13 +4022,9 @@ var OrderedMap = (function (Map$$1) {
   return OrderedMap;
 }(Map));
 
-function isOrderedMap(maybeOrderedMap) {
-  return isMap(maybeOrderedMap) && isOrdered(maybeOrderedMap);
-}
-
 OrderedMap.isOrderedMap = isOrderedMap;
 
-OrderedMap.prototype[IS_ORDERED_SENTINEL] = true;
+OrderedMap.prototype[IS_ORDERED_SYMBOL] = true;
 OrderedMap.prototype[DELETE] = OrderedMap.prototype.remove;
 
 function makeOrderedMap(map, list, ownerID, hash) {
@@ -4163,7 +4168,7 @@ var SortedMapBtreeNode = (function (SortedMapNode$$1) {
 
   SortedMapBtreeNode.prototype.get = function get (key, notSetValue) {
     var entries = this.entries;
-    var didMatch = MakeRef(DID_MATCH);
+    var didMatch = MakeRef();
     var idx = binarySearch(this.comparator, entries, key, didMatch);
     if (GetRef(didMatch)) {
       var value = entries[idx][1];
@@ -4237,7 +4242,7 @@ var SortedMapBtreeNode = (function (SortedMapNode$$1) {
     var entries = this.entries;
 
     // Search keys
-    var didMatch = MakeRef(DID_MATCH);
+    var didMatch = MakeRef();
     var idx = binarySearch(this.comparator, entries, key, didMatch);
     var exists = GetRef(didMatch);
 
@@ -4261,6 +4266,10 @@ var SortedMapBtreeNode = (function (SortedMapNode$$1) {
         var entry = [key, value];
 
         SetRef(didAlter);
+        // Updating previously REMOVED ENTRY
+        if (entries[idx][1] === NOT_SET) {
+          SetRef(didChangeSize);
+        }
         newEntries = setIn$2(entries, idx, entry, canEdit);
         newNodes = nodes;
       }
@@ -4346,7 +4355,7 @@ var SortedMapBtreeNode = (function (SortedMapNode$$1) {
     var entries = this.entries;
 
     // Search keys
-    var didMatch = MakeRef(DID_MATCH);
+    var didMatch = MakeRef();
     var idx = binarySearch(this.comparator, entries, key, didMatch);
     var exists = GetRef(didMatch);
 
@@ -4414,7 +4423,7 @@ var SortedMapBtreeNode = (function (SortedMapNode$$1) {
     var entries = this.entries;
 
     // Search keys
-    var didMatch = MakeRef(DID_MATCH);
+    var didMatch = MakeRef();
     var idx = binarySearch(this.comparator, entries, key, didMatch);
     var exists = GetRef(didMatch);
 
@@ -4794,7 +4803,7 @@ SortedMapBtreeNode.prototype.iterateFrom = function(from, fn, reverse) {
   var entries = this.entries;
   var nodes = this.nodes;
 
-  var didMatch = MakeRef(DID_MATCH);
+  var didMatch = MakeRef();
   var idx = binarySearch(this.comparator, entries, from, didMatch);
 
   if (nodes) {
@@ -4860,7 +4869,7 @@ SortedMapBtreeNode.prototype.iterateFromBackwards = function(
   var entries = this.entries;
   var nodes = this.nodes;
 
-  var didMatch = MakeRef(DID_MATCH);
+  var didMatch = MakeRef();
   var idx = binarySearch(this.comparator, entries, from, didMatch);
 
   if (nodes) {
@@ -4966,7 +4975,7 @@ function mapIteratorFrame$1(node, prev) {
   return {
     node: node,
     index: 0,
-    __prev: prev
+    __prev: prev,
   };
 }
 
@@ -5979,7 +5988,7 @@ var SortedMapBtreeNodePacker = (function (SortedMapPacker$$1) {
         height: height,
         order: order,
         repeat: 1,
-        total: n
+        total: n,
       };
     }
 
@@ -5990,7 +5999,7 @@ var SortedMapBtreeNodePacker = (function (SortedMapPacker$$1) {
         height: height,
         order: order,
         repeat: 1,
-        total: n
+        total: n,
       };
     }
 
@@ -6020,14 +6029,14 @@ var SortedMapBtreeNodePacker = (function (SortedMapPacker$$1) {
         height: height - 1,
         order: order,
         repeat: rootOrder,
-        total: total$1
+        total: total$1,
       });
       return {
         op: 'assemble',
         height: height,
         order: order,
         total: total$1,
-        items: repPlan
+        items: repPlan,
       };
     }
 
@@ -6043,7 +6052,7 @@ var SortedMapBtreeNodePacker = (function (SortedMapPacker$$1) {
         height: height - 1,
         order: order,
         repeat: repeat$1,
-        total: total$2
+        total: total$2,
       };
       plan.push(build);
       n -= total$2;
@@ -6072,7 +6081,7 @@ var SortedMapBtreeNodePacker = (function (SortedMapPacker$$1) {
       height: height,
       order: order,
       total: total,
-      items: plan
+      items: plan,
     };
   };
 
@@ -6648,11 +6657,11 @@ SortedMap.isSortedMap = isSortedMap;
 
 SortedMap.defaultComparator = defaultComparator$1;
 SortedMap.defaultOptions = {
-  type: 'btree'
+  type: 'btree',
 };
 
 var SortedMapPrototype = SortedMap.prototype;
-SortedMapPrototype[IS_SORTED_SENTINEL] = true;
+SortedMapPrototype[IS_SORTED_SYMBOL] = true;
 SortedMapPrototype[DELETE] = SortedMapPrototype.remove;
 SortedMapPrototype.removeIn = SortedMapPrototype.deleteIn;
 SortedMapPrototype.removeAll = SortedMapPrototype.deleteAll;
@@ -6717,8 +6726,8 @@ function updateMap$1(map, k, v, fast) {
       entries
     );
   } else {
-    var didChangeSize = MakeRef(CHANGE_LENGTH);
-    var didAlter = MakeRef(DID_ALTER);
+    var didChangeSize = MakeRef();
+    var didAlter = MakeRef();
 
     if (remove) {
       if (fast) {
@@ -6826,8 +6835,14 @@ SortedMap.getFactory = function(options) {
 };
 
 SortedMap.factories = {
-  btree: new SortedMapBtreeNodeFactory()
+  btree: new SortedMapBtreeNodeFactory(),
 };
+
+var IS_STACK_SYMBOL = '@@__IMMUTABLE_STACK__@@';
+
+function isStack(maybeStack) {
+  return Boolean(maybeStack && maybeStack[IS_STACK_SYMBOL]);
+}
 
 var Stack = (function (IndexedCollection$$1) {
   function Stack(value) {
@@ -6876,7 +6891,7 @@ var Stack = (function (IndexedCollection$$1) {
     for (var ii = arguments.length - 1; ii >= 0; ii--) {
       head = {
         value: arguments$1[ii],
-        next: head
+        next: head,
       };
     }
     if (this.__ownerID) {
@@ -6904,7 +6919,7 @@ var Stack = (function (IndexedCollection$$1) {
       newSize++;
       head = {
         value: value,
-        next: head
+        next: head,
       };
     }, /* reverse */ true);
     if (this.__ownerID) {
@@ -7018,16 +7033,10 @@ var Stack = (function (IndexedCollection$$1) {
   return Stack;
 }(IndexedCollection));
 
-function isStack(maybeStack) {
-  return !!(maybeStack && maybeStack[IS_STACK_SENTINEL]);
-}
-
 Stack.isStack = isStack;
 
-var IS_STACK_SENTINEL = '@@__IMMUTABLE_STACK__@@';
-
 var StackPrototype = Stack.prototype;
-StackPrototype[IS_STACK_SENTINEL] = true;
+StackPrototype[IS_STACK_SYMBOL] = true;
 StackPrototype.shift = StackPrototype.pop;
 StackPrototype.unshift = StackPrototype.push;
 StackPrototype.unshiftAll = StackPrototype.pushAll;
@@ -7055,6 +7064,16 @@ function makeStack(size, head, ownerID, hash) {
 var EMPTY_STACK;
 function emptyStack() {
   return EMPTY_STACK || (EMPTY_STACK = makeStack(0));
+}
+
+var IS_SET_SYMBOL = '@@__IMMUTABLE_SET__@@';
+
+function isSet(maybeSet) {
+  return Boolean(maybeSet && maybeSet[IS_SET_SYMBOL]);
+}
+
+function isOrderedSet(maybeOrderedSet) {
+  return isSet(maybeOrderedSet) && isOrdered(maybeOrderedSet);
 }
 
 function deepEqual(a, b) {
@@ -7136,18 +7155,34 @@ function mixin(ctor, methods) {
 }
 
 function toJS(value) {
-  return isDataStructure(value)
-    ? Seq(value)
-        .map(toJS)
-        .toJSON()
-    : value;
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  if (!isCollection(value)) {
+    if (!isDataStructure(value)) {
+      return value;
+    }
+    value = Seq(value);
+  }
+  if (isKeyed(value)) {
+    var result$1 = {};
+    value.__iterate(function (v, k) {
+      result$1[k] = toJS(v);
+    });
+    return result$1;
+  }
+  var result = [];
+  value.__iterate(function (v) {
+    result.push(toJS(v));
+  });
+  return result;
 }
 
 var Set = (function (SetCollection$$1) {
   function Set(value) {
     return value === null || value === undefined
       ? emptySet()
-      : isSet(value) && !isOrdered(value)
+      : isSet(value) && !isOrdered(value) && !isSorted(value)
         ? value
         : emptySet().withMutations(function (set) {
             var iter = SetCollection$$1(value);
@@ -7207,6 +7242,24 @@ var Set = (function (SetCollection$$1) {
   };
 
   // @pragma Composition
+
+  Set.prototype.map = function map (mapper, context) {
+    var this$1 = this;
+
+    var removes = [];
+    var adds = [];
+    this.forEach(function (value) {
+      var mapped = mapper.call(context, value, value, this$1);
+      if (mapped !== value) {
+        removes.push(value);
+        adds.push(mapped);
+      }
+    });
+    return this.withMutations(function (set) {
+      removes.forEach(function (value) { return set.remove(value); });
+      adds.forEach(function (value) { return set.add(value); });
+    });
+  };
 
   Set.prototype.union = function union () {
     var iters = [], len = arguments.length;
@@ -7311,16 +7364,10 @@ var Set = (function (SetCollection$$1) {
   return Set;
 }(SetCollection));
 
-function isSet(maybeSet) {
-  return !!(maybeSet && maybeSet[IS_SET_SENTINEL]);
-}
-
 Set.isSet = isSet;
 
-var IS_SET_SENTINEL = '@@__IMMUTABLE_SET__@@';
-
 var SetPrototype = Set.prototype;
-SetPrototype[IS_SET_SENTINEL] = true;
+SetPrototype[IS_SET_SYMBOL] = true;
 SetPrototype[DELETE] = SetPrototype.remove;
 SetPrototype.merge = SetPrototype.concat = SetPrototype.union;
 SetPrototype.withMutations = withMutations;
@@ -7477,7 +7524,7 @@ SortedSet.defaultComparator = SortedMap.defaultComparator;
 SortedSet.defaultOptions = SortedMap.defaultOptions;
 
 var SortedSetPrototype = SortedSet.prototype;
-SortedSetPrototype[IS_SORTED_SENTINEL] = true;
+SortedSetPrototype[IS_SORTED_SYMBOL] = true;
 
 SortedSetPrototype.__empty = function() {
   return emptySortedSet(this.getComparator(), this.getOptions());
@@ -7981,8 +8028,8 @@ mixin(Collection, {
       .findKey(predicate, context);
   },
 
-  first: function first() {
-    return this.find(returnTrue);
+  first: function first(notSetValue) {
+    return this.find(returnTrue, null, notSetValue);
   },
 
   flatMap: function flatMap(mapper, context) {
@@ -8033,10 +8080,10 @@ mixin(Collection, {
       .toIndexedSeq();
   },
 
-  last: function last() {
+  last: function last(notSetValue) {
     return this.toSeq()
       .reverse()
-      .first();
+      .first(notSetValue);
   },
 
   lastKeyOf: function lastKeyOf(searchValue) {
@@ -8128,7 +8175,7 @@ mixin(Collection, {
 
   hashCode: function hashCode() {
     return this.__hash || (this.__hash = hashCollection(this));
-  }
+  },
 
   // ### Internal
 
@@ -8138,7 +8185,7 @@ mixin(Collection, {
 });
 
 var CollectionPrototype = Collection.prototype;
-CollectionPrototype[IS_ITERABLE_SENTINEL] = true;
+CollectionPrototype[IS_COLLECTION_SYMBOL] = true;
 CollectionPrototype[ITERATOR_SYMBOL] = CollectionPrototype.values;
 CollectionPrototype.toJSON = CollectionPrototype.toArray;
 CollectionPrototype.__toStringMapper = quoteString;
@@ -8177,11 +8224,11 @@ mixin(KeyedCollection, {
         .map(function (k, v) { return mapper.call(context, k, v, this$1); })
         .flip()
     );
-  }
+  },
 });
 
 var KeyedCollectionPrototype = KeyedCollection.prototype;
-KeyedCollectionPrototype[IS_KEYED_SENTINEL] = true;
+KeyedCollectionPrototype[IS_KEYED_SYMBOL] = true;
 KeyedCollectionPrototype[ITERATOR_SYMBOL] = CollectionPrototype.entries;
 KeyedCollectionPrototype.toJSON = toObject;
 KeyedCollectionPrototype.__toStringMapper = function (v, k) { return quoteString(k) + ': ' + quoteString(v); };
@@ -8248,8 +8295,8 @@ mixin(IndexedCollection, {
     return entry ? entry[0] : -1;
   },
 
-  first: function first() {
-    return this.get(0);
+  first: function first(notSetValue) {
+    return this.get(0, notSetValue);
   },
 
   flatten: function flatten(depth) {
@@ -8292,8 +8339,8 @@ mixin(IndexedCollection, {
     return Range(0, this.size);
   },
 
-  last: function last() {
-    return this.get(-1);
+  last: function last(notSetValue) {
+    return this.get(-1, notSetValue);
   },
 
   skipWhile: function skipWhile(predicate, context) {
@@ -8322,12 +8369,12 @@ mixin(IndexedCollection, {
     var collections = arrCopy(arguments);
     collections[0] = this;
     return reify(this, zipWithFactory(this, zipper, collections));
-  }
+  },
 });
 
 var IndexedCollectionPrototype = IndexedCollection.prototype;
-IndexedCollectionPrototype[IS_INDEXED_SENTINEL] = true;
-IndexedCollectionPrototype[IS_ORDERED_SENTINEL] = true;
+IndexedCollectionPrototype[IS_INDEXED_SYMBOL] = true;
+IndexedCollectionPrototype[IS_ORDERED_SYMBOL] = true;
 
 mixin(SetCollection, {
   // ### ES6 Collection methods (ES6 Array and Map)
@@ -8344,7 +8391,7 @@ mixin(SetCollection, {
 
   keySeq: function keySeq() {
     return this.valueSeq();
-  }
+  },
 });
 
 SetCollection.prototype.has = CollectionPrototype.includes;
@@ -8473,14 +8520,10 @@ var OrderedSet = (function (Set$$1) {
   return OrderedSet;
 }(Set));
 
-function isOrderedSet(maybeOrderedSet) {
-  return isSet(maybeOrderedSet) && isOrdered(maybeOrderedSet);
-}
-
 OrderedSet.isOrderedSet = isOrderedSet;
 
 var OrderedSetPrototype = OrderedSet.prototype;
-OrderedSetPrototype[IS_ORDERED_SENTINEL] = true;
+OrderedSetPrototype[IS_ORDERED_SYMBOL] = true;
 OrderedSetPrototype.zip = IndexedCollectionPrototype.zip;
 OrderedSetPrototype.zipWith = IndexedCollectionPrototype.zipWith;
 
@@ -8518,6 +8561,9 @@ var Record = function Record(defaultValues, name) {
       hasInitialized = true;
       var keys = Object.keys(defaultValues);
       var indices = (RecordTypePrototype._indices = {});
+      // Deprecated: left to attempt not to break any external code which
+      // relies on a ._name property existing on record instances.
+      // Use Record.getDescriptiveName() instead
       RecordTypePrototype._name = name;
       RecordTypePrototype._keys = keys;
       RecordTypePrototype._defaultValues = defaultValues;
@@ -8554,6 +8600,10 @@ var Record = function Record(defaultValues, name) {
     RecordPrototype
   ));
   RecordTypePrototype.constructor = RecordType;
+
+  if (name) {
+    RecordType.displayName = name;
+  }
 
   return RecordType;
 };
@@ -8663,7 +8713,7 @@ Record.prototype.__ensureOwner = function __ensureOwner (ownerID) {
 Record.isRecord = isRecord;
 Record.getDescriptiveName = recordName;
 var RecordPrototype = Record.prototype;
-RecordPrototype[IS_RECORD_SENTINEL] = true;
+RecordPrototype[IS_RECORD_SYMBOL] = true;
 RecordPrototype[DELETE] = RecordPrototype.remove;
 RecordPrototype.deleteIn = RecordPrototype.removeIn = deleteIn;
 RecordPrototype.getIn = getIn$$1;
@@ -8695,7 +8745,7 @@ function makeRecord(likeRecord, values, ownerID) {
 }
 
 function recordName(record) {
-  return record._name || record.constructor.name || 'Record';
+  return record.constructor.displayName || record.constructor.name || 'Record';
 }
 
 function recordSeq(record) {
@@ -8711,7 +8761,7 @@ function setProp(prototype, name) {
       set: function(value) {
         invariant(this.__ownerID, 'Cannot set on an immutable record.');
         this.set(name, value);
-      }
+      },
     });
   } catch (error) {
     // Object.defineProperty failed. Probably IE8.
@@ -8859,8 +8909,9 @@ function defaultConverter(k, v) {
   return isKeyed(v) ? v.toMap() : v.toList();
 }
 
-var version = "0.2.6";
+var version = "0.2.7";
 
+// Functional predicates
 // Functional read/write API
 var Immutable = {
   version: version,
@@ -8895,6 +8946,14 @@ var Immutable = {
   isOrdered: isOrdered,
   isSorted: isSorted,
   isValueObject: isValueObject,
+  isSeq: isSeq,
+  isList: isList,
+  isMap: isMap,
+  isOrderedMap: isOrderedMap,
+  isStack: isStack,
+  isSet: isSet,
+  isOrderedSet: isOrderedSet,
+  isRecord: isRecord,
 
   get: get,
   getIn: getIn$1,
@@ -8909,7 +8968,7 @@ var Immutable = {
   set: set,
   setIn: setIn$1,
   update: update$1,
-  updateIn: updateIn
+  updateIn: updateIn,
 };
 
 // Note: Iterable is deprecated
