@@ -4094,6 +4094,17 @@ function updateOrderedMap(omap, k, v) {
 /**
  * Copyright (c) 2014-present, Facebook, Inc.
  *
+ * This source code is licensed under the MIT license found in the
+ * LICENSE file in the root directory of this source tree.
+ */
+
+function isSortedMap(maybeSortedMap) {
+  return isMap(maybeSortedMap) && isSorted(maybeSortedMap);
+}
+
+/**
+ * Copyright (c) 2014-present, Facebook, Inc.
+ *
  * Original source code is licensed under the MIT license found in the
  * LICENSE file in the root directory of this source tree.
  */
@@ -6649,10 +6660,6 @@ var SortedMap = (function (Map$$1) {
   return SortedMap;
 }(Map));
 
-function isSortedMap(maybeSortedMap) {
-  return isMap(maybeSortedMap) && isSorted(maybeSortedMap);
-}
-
 SortedMap.isSortedMap = isSortedMap;
 
 SortedMap.defaultComparator = defaultComparator$1;
@@ -7178,6 +7185,10 @@ function toJS(value) {
   return result;
 }
 
+function isSortedSet(maybeSortedSet) {
+  return isSet(maybeSortedSet) && isSorted(maybeSortedSet);
+}
+
 var Set = (function (SetCollection$$1) {
   function Set(value) {
     return value === null || value === undefined
@@ -7513,10 +7524,6 @@ var SortedSet = (function (Set$$1) {
 
   return SortedSet;
 }(Set));
-
-function isSortedSet(maybeSortedSet) {
-  return isSet(maybeSortedSet) && isSorted(maybeSortedSet);
-}
 
 SortedSet.isSortedSet = isSortedSet;
 
@@ -8909,7 +8916,7 @@ function defaultConverter(k, v) {
   return isKeyed(v) ? v.toMap() : v.toList();
 }
 
-var version = "0.2.7";
+var version = "0.2.8";
 
 // Functional predicates
 // Functional read/write API
@@ -8950,9 +8957,11 @@ var Immutable = {
   isList: isList,
   isMap: isMap,
   isOrderedMap: isOrderedMap,
+  isSortedMap: isSortedMap,
   isStack: isStack,
   isSet: isSet,
   isOrderedSet: isOrderedSet,
+  isSortedSet: isSortedSet,
   isRecord: isRecord,
 
   get: get,
