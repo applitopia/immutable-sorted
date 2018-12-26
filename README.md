@@ -15,7 +15,7 @@ operations implemented using [Floyd-Rivest](https://en.wikipedia.org/wiki/Floyd%
 Version
 -------
 
-The current version [immutable-sorted@0.2.8](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.8) is an extension of [immutable-js@4.0.0-rc.12](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.12).
+The current version [immutable-sorted@0.2.9](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.9) is an extension of [immutable-js@4.0.0-rc.12](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.12).
 
 
 Installation
