@@ -8916,7 +8916,7 @@ function defaultConverter(k, v) {
   return isKeyed(v) ? v.toMap() : v.toList();
 }
 
-var version = "0.2.8";
+var version = "0.2.9";
 
 // Functional predicates
 // Functional read/write API
