@@ -83,10 +83,10 @@ declare class _Collection<K, +V> implements ValueObject {
   toObject(): { [key: string]: V };
   toMap(): Map<K, V>;
   toOrderedMap(): OrderedMap<K, V>;
-  toSortedMap(): SortedMap<K, V>;
+  toSortedMap(comparator?: (a: K, b: K)=>number, options?: SortedMapOptions): SortedMap<K, V>;
   toSet(): Set<V>;
   toOrderedSet(): OrderedSet<V>;
-  toSortedSet(): SortedSet<V>;
+  toSortedSet(comparator?: (a: V, b: V)=>number, options?: SortedSetOptions): SortedSet<V>;
   toList(): List<V>;
   toStack(): Stack<V>;
   toSeq(): Seq<K, V>;
@@ -233,9 +233,11 @@ declare function isSeq(maybeSeq: any): boolean %checks(maybeSeq instanceof Seq);
 declare function isList(maybeList: any): boolean %checks(maybeList instanceof List);
 declare function isMap(maybeMap: any): boolean %checks(maybeMap instanceof Map);
 declare function isOrderedMap(maybeOrderedMap: any): boolean %checks(maybeOrderedMap instanceof OrderedMap);
+declare function isSortedMap(maybeOrderedMap: any): boolean %checks(maybeOrderedMap instanceof OrderedMap);
 declare function isStack(maybeStack: any): boolean %checks(maybeStack instanceof Stack);
 declare function isSet(maybeSet: any): boolean %checks(maybeSet instanceof Set);
 declare function isOrderedSet(maybeOrderedSet: any): boolean %checks(maybeOrderedSet instanceof OrderedSet);
+declare function isSortedSet(maybeOrderedSet: any): boolean %checks(maybeOrderedSet instanceof OrderedSet);
 declare function isRecord(maybeRecord: any): boolean %checks(maybeRecord instanceof Record);
 
 declare interface ValueObject {

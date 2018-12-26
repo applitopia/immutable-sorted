@@ -15,7 +15,7 @@ operations implemented using [Floyd-Rivest](https://en.wikipedia.org/wiki/Floyd%
 Version
 -------
 
-The current version [immutable-sorted@0.2.7](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.7) is an extension of [immutable-js@4.0.0-rc.12](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.12).
+The current version [immutable-sorted@0.2.8](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.8) is an extension of [immutable-js@4.0.0-rc.12](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.12).
 
 
 Installation
@@ -205,7 +205,7 @@ SortedSet {
 SortedMap
 ---------
 
-See more details on [SortedMap](https://applitopia.github.io/pages/immutable-sorted/docs/#/SortedMap) page.
+See more details on [SortedMap](https://applitopia.github.io/immutable-sorted/docs/#/SortedMap) page.
 
 SortedMap is a type of Map that keeps its entries (their keys) sorted by a comparator. The current implementation is using a classic B-Tree memory structure with O(N) space requirements and O(log N) get, set, and delete operations.
 

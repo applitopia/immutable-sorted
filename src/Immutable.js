@@ -33,9 +33,11 @@ import { isSeq } from './predicates/isSeq';
 import { isList } from './predicates/isList';
 import { isMap } from './predicates/isMap';
 import { isOrderedMap } from './predicates/isOrderedMap';
+import { isSortedMap } from './predicates/isSortedMap';
 import { isStack } from './predicates/isStack';
 import { isSet } from './predicates/isSet';
 import { isOrderedSet } from './predicates/isOrderedSet';
+import { isSortedSet } from './predicates/isSortedSet';
 import { isRecord } from './predicates/isRecord';
 
 import { Collection } from './CollectionImpl';
@@ -93,9 +95,11 @@ export default {
   isList: isList,
   isMap: isMap,
   isOrderedMap: isOrderedMap,
+  isSortedMap: isSortedMap,
   isStack: isStack,
   isSet: isSet,
   isOrderedSet: isOrderedSet,
+  isSortedSet: isSortedSet,
   isRecord: isRecord,
 
   get: get,

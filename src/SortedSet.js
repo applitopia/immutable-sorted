@@ -13,9 +13,9 @@
  */
 
 import { SetCollection, KeyedCollection } from './Collection';
-import { IS_SORTED_SYMBOL, isSorted } from './predicates/isSorted';
+import { IS_SORTED_SYMBOL } from './predicates/isSorted';
+import { isSortedSet } from './predicates/isSortedSet';
 import { Set } from './Set';
-import { isSet } from './predicates/isSet';
 import { SortedMap, emptySortedMap } from './SortedMap';
 import { mapFactory } from './Operations';
 
@@ -113,10 +113,6 @@ export class SortedSet extends Set {
     }
     return this.__make(newMap, ownerID);
   }
-}
-
-export function isSortedSet(maybeSortedSet) {
-  return isSet(maybeSortedSet) && isSorted(maybeSortedSet);
 }
 
 SortedSet.isSortedSet = isSortedSet;

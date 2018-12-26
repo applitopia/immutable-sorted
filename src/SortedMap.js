@@ -14,12 +14,12 @@
 
 import { is } from './is';
 import { KeyedCollection } from './Collection';
-import { IS_SORTED_SYMBOL, isSorted } from './predicates/isSorted';
+import { IS_SORTED_SYMBOL } from './predicates/isSorted';
+import { isSortedMap } from './predicates/isSortedMap';
 import { DELETE, NOT_SET, MakeRef, GetRef } from './TrieUtils';
 import assertNotInfinite from './utils/assertNotInfinite';
 import { sortFactory } from './Operations';
 import { Map } from './Map';
-import { isMap } from './predicates/isMap';
 import { KeyedSeq } from './Seq';
 import { SortedMapBtreeNodeFactory } from './SortedMapBtreeNode';
 
@@ -278,10 +278,6 @@ export class SortedMap extends Map {
 
     return sequence;
   }
-}
-
-function isSortedMap(maybeSortedMap) {
-  return isMap(maybeSortedMap) && isSorted(maybeSortedMap);
 }
 
 SortedMap.isSortedMap = isSortedMap;

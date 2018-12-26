@@ -5793,6 +5793,23 @@ export module SortedMap {
   export function isOrdered(maybeOrdered: any): boolean;
 
   /**
+   * True if `maybeSorted` is a Collection where iteration order is well
+   * defined by a comparator.
+   *
+   * <!-- runkit:activate -->
+   * ```js
+   * const { isSorted, Map, SortedMap, List, Set } = require('immutable');
+   * isSorted([]); // false
+   * isSorted({}); // false
+   * isSorted(Map()); // false
+   * isSorted(SortedMap()); // true
+   * isSorted(List()); // true
+   * isSorted(Set()); // false
+   * ```
+   */
+  export function isSorted(maybeSorted: any): boolean;
+
+  /**
    * True if `maybeValue` is a JavaScript Object which has *both* `equals()`
    * and `hashCode()` methods.
    *
@@ -5815,7 +5832,7 @@ export module SortedMap {
   /**
    * True if `maybeMap` is a Map.
    *
-   * Also true for OrderedMaps.
+   * Also true for OrderedMaps and SortedMaps.
    */
   export function isMap(maybeMap: any): maybeMap is Map<any, any>;
 
@@ -5825,6 +5842,11 @@ export module SortedMap {
   export function isOrderedMap(maybeOrderedMap: any): maybeOrderedMap is OrderedMap<any, any>;
 
   /**
+   * True if `maybeSortedMap` is an SortedMap.
+   */
+  export function isSortedMap(maybeSortedMap: any): maybeSortedMap is SortedMap<any, any>;
+
+  /**
    * True if `maybeStack` is a Stack.
    */
   export function isStack(maybeStack: any): maybeStack is Stack<any>;
@@ -5832,7 +5854,7 @@ export module SortedMap {
   /**
    * True if `maybeSet` is a Set.
    *
-   * Also true for OrderedSets.
+   * Also true for OrderedSets and SortedSets.
    */
   export function isSet(maybeSet: any): maybeSet is Set<any>;
 
@@ -5840,6 +5862,11 @@ export module SortedMap {
    * True if `maybeOrderedSet` is an OrderedSet.
    */
   export function isOrderedSet(maybeOrderedSet: any): maybeOrderedSet is OrderedSet<any>;
+
+  /**
+   * True if `maybeSortedSet` is an SortedSet.
+   */
+  export function isSortedSet(maybeSortedSet: any): maybeSortedSet is SortedSet<any>;
 
   /**
    * True if `maybeRecord` is a Record.
