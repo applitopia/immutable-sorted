@@ -1158,6 +1158,8 @@ declare class SortedMap<K, +V> extends Map<K, V> mixins UpdatableInCollection<K,
   pack(values?: Iterable<[K, V]> | PlainObjInput<K, V>): this;
 
   from(key: K, backwards?: boolean): Seq<K, V>;
+
+  fromIndex(index: number, backwards?: boolean): Seq<K, V>;
   
   checkConsistency(printFlag: boolean): number;
 
@@ -1494,6 +1496,8 @@ declare class SortedSet<+T> extends Set<T> {
   pack(values?: Iterable<T>): this;
 
   from(value: T, backwards?: boolean): Seq<T>;
+
+  fromIndex(index: number, backwards?: boolean): Seq<T>;
 }
 
 declare function isStack(maybeStack: mixed): boolean %checks(maybeStack instanceof Stack);

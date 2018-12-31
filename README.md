@@ -15,7 +15,7 @@ operations implemented using [Floyd-Rivest](https://en.wikipedia.org/wiki/Floyd%
 Version
 -------
 
-The current version [immutable-sorted@0.2.9](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.9) is an extension of [immutable-js@4.0.0-rc.12](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.12).
+The current version [immutable-sorted@0.2.10](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.10) is an extension of [immutable-js@4.0.0-rc.12](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.12).
 
 
 Installation
@@ -103,6 +103,23 @@ Seq { "R", "Q", "P", "O", "N" }
 
 > abc.from("R", true).takeWhile(s => s > "K");
 Seq { "R", "Q", "P", "O", "N", "M", "L" }
+```
+
+We can also use the numeric index to efficiently iterate through the sorted collections numeric as if they were arrays. The method:
+
+```js
+fromIndex(n, backwards) 
+```
+
+is optimized to quickly find the n-th entry inside the b-tree structure by checking the computed sizes of underlying nodes. Even though the algorithm is not as fast as working with native array, it is faster by orders of magnitude than walking through the first n elements in unindexed collection to skip them. The access time is O(log N).
+
+Examples:
+```js
+> abc.fromIndex(4).take(5);
+Seq { "E", "F", "G", "H", "I" }
+
+> abc.fromIndex(4, true).take(5);
+Seq { "E", "D", "C", "B", "A" }
 ```
 
 **Working with objects**

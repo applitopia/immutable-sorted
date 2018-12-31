@@ -39,7 +39,23 @@ class SortedMapBtreeNode extends SortedMapNode {
     this.btreeOrder =
       options && options.btreeOrder ? options.btreeOrder : DEFAULT_BTREE_ORDER;
     this.btreeNodeSplitSize = Math.floor((this.btreeOrder - 1) / 2);
+
+    this._calcSize();
     return this;
+  }
+
+  _calcSize() {
+    this.size = 0;
+    for (let i = 0; i < this.entries.length; i++) {
+      if (this.entries[i][1] !== NOT_SET) {
+        this.size++;
+      }
+    }
+    if (this.nodes) {
+      for (let i = 0; i < this.nodes.length; i++) {
+        this.size += this.nodes[i].size;
+      }
+    }
   }
 
   getComparator() {
@@ -61,6 +77,46 @@ class SortedMapBtreeNode extends SortedMapNode {
       return value === NOT_SET ? notSetValue : value;
     }
     return notSetValue;
+  }
+
+  entryAt(index) {
+    const didMatch = MakeRef();
+    const subIndex = MakeRef();
+    const idx = this.indexSearch(index, didMatch, subIndex);
+    if (GetRef(didMatch)) {
+      const entry = this.entries[idx];
+      const key = entry[0];
+      const value = entry[1];
+      return [key, value];
+    }
+
+    return this.nodes[idx].entryAt(subIndex.value);
+  }
+
+  keyAt(index) {
+    const didMatch = MakeRef();
+    const subIndex = MakeRef();
+    const idx = this.indexSearch(index, didMatch, subIndex);
+    if (GetRef(didMatch)) {
+      const entry = this.entries[idx];
+      const key = entry[0];
+      return key;
+    }
+
+    return this.nodes[idx].keyAt(subIndex.value);
+  }
+
+  valueAt(index) {
+    const didMatch = MakeRef();
+    const subIndex = MakeRef();
+    const idx = this.indexSearch(index, didMatch, subIndex);
+    if (GetRef(didMatch)) {
+      const entry = this.entries[idx];
+      const value = entry[1];
+      return value;
+    }
+
+    return this.nodes[idx].valueAt(subIndex.value);
   }
 
   // Returns first key in this subtree
@@ -85,11 +141,28 @@ class SortedMapBtreeNode extends SortedMapNode {
     return entries[entries.length - 1][0];
   }
 
+  upsert(ownerID, key, value, didChangeSize, didAlter, outKvn) {
+    const ret = this._upsert(
+      ownerID,
+      key,
+      value,
+      didChangeSize,
+      didAlter,
+      outKvn
+    );
+
+    if (this === ret && GetRef(didChangeSize)) {
+      this.size++;
+    }
+
+    return ret;
+  }
+
   //
   // outKvn is out array with values [[key, value], node] i.e. [entry, node]
   // which can be consumed or returned by this operation
   //
-  upsert(ownerID, key, value, didChangeSize, didAlter, outKvn) {
+  _upsert(ownerID, key, value, didChangeSize, didAlter, outKvn) {
     if (!outKvn) {
       // This must be a root case called from SortedMap
       const subKvn = [];
@@ -227,11 +300,21 @@ class SortedMapBtreeNode extends SortedMapNode {
     return this.makeNewNode(newEntries, newNodes, ownerID, canEdit);
   }
 
+  fastRemove(ownerID, key, didChangeSize, didAlter) {
+    const ret = this._fastRemove(ownerID, key, didChangeSize, didAlter);
+
+    if (this === ret && GetRef(didChangeSize)) {
+      this.size--;
+    }
+
+    return ret;
+  }
+
   // this version of remove doesn't do any rebalancing
   // it just sets the value in an entry to NOT_SET
   // this method would be preferable when removing large bulk
   // of entres from mutable SortedMap followed by pack()
-  fastRemove(ownerID, key, didChangeSize, didAlter) {
+  _fastRemove(ownerID, key, didChangeSize, didAlter) {
     const entries = this.entries;
 
     // Search keys
@@ -287,6 +370,24 @@ class SortedMapBtreeNode extends SortedMapNode {
     return this.makeNewNode(newEntries, newNodes, ownerID, canEdit);
   }
 
+  remove(ownerID, key, didChangeSize, didAlter, parent, parentIdx, outKvn) {
+    const ret = this._remove(
+      ownerID,
+      key,
+      didChangeSize,
+      didAlter,
+      parent,
+      parentIdx,
+      outKvn
+    );
+
+    if (this === ret && GetRef(didChangeSize)) {
+      this.size--;
+    }
+
+    return ret;
+  }
+
   //
   // outKvn is an output array with the following format
   //
@@ -299,7 +400,7 @@ class SortedMapBtreeNode extends SortedMapNode {
   // outKvn[2] is boolean value indicating if node referenced in outKvnp[1]
   // is left (true) or right (false)
   //
-  remove(ownerID, key, didChangeSize, didAlter, parent, parentIdx, outKvn) {
+  _remove(ownerID, key, didChangeSize, didAlter, parent, parentIdx, outKvn) {
     const entries = this.entries;
 
     // Search keys
@@ -410,6 +511,7 @@ class SortedMapBtreeNode extends SortedMapNode {
     if (canEdit) {
       this.entries = newEntries;
       this.nodes = newNodes;
+      this._calcSize();
       return this;
     }
     return new SortedMapBtreeNode(
@@ -433,6 +535,8 @@ class SortedMapBtreeNode extends SortedMapNode {
     const nodes = this.nodes;
     const entries = this.entries;
 
+    w(indent(level));
+    w('SIZE=' + this.size + '\n');
     if (nodes) {
       for (let i = 0; i < nodes.length; i++) {
         const node = nodes[i];
@@ -774,6 +878,100 @@ SortedMapBtreeNode.prototype.iterateFromBackwards = function(
   return true;
 };
 
+SortedMapBtreeNode.prototype.iterateFromIndex = function(index, fn) {
+  const entries = this.entries;
+  const nodes = this.nodes;
+
+  const didMatch = MakeRef();
+  const subIndex = MakeRef();
+  const idx = this.indexSearch(index, didMatch, subIndex);
+
+  if (nodes) {
+    for (let ii = idx, maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
+      const node = nodes[ii];
+      if (ii === idx && !GetRef(didMatch)) {
+        if (node.iterateFromIndex(subIndex.value, fn) === false) {
+          return false;
+        }
+      } else if (ii > idx) {
+        if (node.iterate(fn, false) === false) {
+          return false;
+        }
+      }
+      const entry = entries[ii];
+      if (entry[1] === NOT_SET) {
+        continue;
+      }
+      if (fn(entry) === false) {
+        return false;
+      }
+    }
+
+    // Iterate through the remaining last node
+    const node = nodes[nodes.length - 1];
+    if (idx === nodes.length - 1) {
+      if (node.iterateFromIndex(subIndex.value, fn) === false) {
+        return false;
+      }
+    } else if (node.iterate(fn, false) === false) {
+      return false;
+    }
+  } else {
+    for (let ii = idx, maxIndex = entries.length - 1; ii <= maxIndex; ii++) {
+      const entry = entries[ii];
+      if (entry[1] === NOT_SET) {
+        continue;
+      }
+      if (fn(entry) === false) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
+SortedMapBtreeNode.prototype.iterateFromIndexBackwards = function(index, fn) {
+  const entries = this.entries;
+  const nodes = this.nodes;
+
+  const didMatch = MakeRef();
+  const subIndex = MakeRef();
+  const idx = this.indexSearch(index, didMatch, subIndex);
+
+  if (nodes) {
+    for (let ii = idx; ii >= 0; ii--) {
+      if (ii < idx || GetRef(didMatch)) {
+        const entry = entries[ii];
+        if (entry[1] === NOT_SET) {
+          continue;
+        }
+        if (fn(entry) === false) {
+          return false;
+        }
+      }
+      const node = nodes[ii];
+      if (ii === idx && !GetRef(didMatch)) {
+        if (node.iterateFromIndexBackwards(subIndex.value, fn) === false) {
+          return false;
+        }
+      } else if (node.iterate(fn, true) === false) {
+        return false;
+      }
+    }
+  } else {
+    for (let ii = GetRef(didMatch) ? idx : idx - 1; ii >= 0; ii--) {
+      const entry = entries[ii];
+      if (entry[1] === NOT_SET) {
+        continue;
+      }
+      if (fn(entry) === false) {
+        return false;
+      }
+    }
+  }
+  return true;
+};
+
 class SortedMapBtreeNodeIterator extends Iterator {
   constructor(map, type, reverse) {
     this._type = type;
@@ -1071,6 +1269,49 @@ function binarySearch(comparator, entries, key, didMatch) {
   }
   return first;
 }
+
+SortedMapBtreeNode.prototype.indexSearch = function(index, didMatch, subIndex) {
+  if (index < 0 || index >= this.size) {
+    throw new Error(
+      'BtreeNode.indexSearch: index is out of bounds: ' +
+        index +
+        ' vs ' +
+        this.size
+    );
+  }
+  const entries = this.entries;
+  const nodes = this.nodes;
+
+  for (let i = 0; i < entries.length; i++) {
+    if (nodes) {
+      const node = nodes[i];
+      if (index < node.size) {
+        subIndex.value = index;
+        return i;
+      }
+      index -= node.size;
+    }
+
+    const entry = entries[i];
+    if (entry[1] !== NOT_SET) {
+      if (index === 0) {
+        SetRef(didMatch);
+        return i;
+      }
+      index--;
+    }
+  }
+
+  if (nodes) {
+    const node = nodes[nodes.length - 1];
+    if (index < node.size) {
+      subIndex.value = index;
+      return nodes.length - 1;
+    }
+  }
+
+  throw new Error('BtreeNode.indexSearch: inconsistent node size');
+};
 
 //
 // Node Split algorithms
@@ -2119,14 +2360,20 @@ class SortedMapBtreeNodePacker extends SortedMapPacker {
     this.flush(plan.height);
   }
 
+  flushLevel(level) {
+    this.prepareLevel(level + 1);
+    const node = this.stack[level];
+    node._calcSize();
+    this.addNode(level + 1, node);
+    this.stack[level] = undefined;
+  }
+
   flush(height) {
     for (let i = 0; i < height; i++) {
       const level = i;
       if (this.stack[level]) {
         // flush this level
-        this.prepareLevel(level + 1);
-        this.addNode(level + 1, this.stack[level]);
-        this.stack[level] = undefined;
+        this.flushLevel(level);
         // next entry goes to parent
       }
     }
@@ -2157,9 +2404,7 @@ class SortedMapBtreeNodePacker extends SortedMapPacker {
       } else if (this.stackIndices[level] === this.order - 1) {
         // Leaf - we have filled all entries
         // flush the leaf
-        this.prepareLevel(level + 1);
-        this.addNode(level + 1, this.stack[level]);
-        this.stack[level] = undefined;
+        this.flushLevel(level);
         // next entry goes to parent
         this.stackLevel++;
       }
@@ -2176,9 +2421,7 @@ class SortedMapBtreeNodePacker extends SortedMapPacker {
     if (this.stackIndices[level] === this.order - 1) {
       // we filled the whole node
       // flush the node
-      this.prepareLevel(level + 1);
-      this.addNode(level + 1, this.stack[level]);
-      this.stack[level] = undefined;
+      this.flushLevel(level);
       // next entry goes to parent
       this.stackLevel++;
     }
@@ -2212,7 +2455,7 @@ class SortedMapBtreeNodePacker extends SortedMapPacker {
     return this.stack[level].nodes[0];
   }
 
-  // Will pack seq and storie it in the map
+  // Will pack seq and store it in the map
   pack(comparator, options, ownerID, collection) {
     if (options && options.type && options.type !== DEFAULT_TYPE) {
       throw new Error('Unsuported type by btree factory: ' + options.type);

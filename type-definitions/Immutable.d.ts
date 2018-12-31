@@ -1735,6 +1735,31 @@ export module SortedMap {
     from(key: K, backwards?: boolean): Seq<K, V>;
 
     /**
+     * Returns a sequence representing a portion of this sorted map starting from numeric index position,
+     * as if the collection was an array.
+     * If the optional parameter backwards is set to true, the returned sequence will
+     * list the entries backwards.
+     * 
+     * The method is optimized to quickly find the n-th entry inside the b-tree structure 
+     * by checking the computed sizes of underlying nodes. 
+     * Even though the algorithm is not as fast as working with a native array, 
+     * it is faster by orders of magnitude than walking through the first n elements 
+     * of unindexed collection to just skip them. The access time is O(log N).
+
+     * Example:
+     * ```js
+     * > const abc = SortedMap([["A", "a"], ["B", "b"], ["C", "c"], ["D", "d"], ["E", "e"], ["F", "f"], ["G", "g"], ["H", "h"], ["I", "i"], ["J", "j"], ["K", "k"], ["L", "l"], ["M", "m"], ["N", "n"], ["O", "o"], ["P", "p"], ["Q", "q"], ["R", "r"], ["S", "s"], ["T", "t"], ["U", "u"], ["V", "v"], ["W", "w"], ["X", "x"], ["Y", "y"], ["Z", "z"]]);
+     * 
+     * > abc.fromIndex(4).take(5);
+     * Seq { "E": "e", "F": "f", "G": "g", "H": "h", "I": "i" }
+     * 
+     * > abc.fromIndex(4, true).take(5);
+     * Seq { "E": "e", "D": "d", "C": "c", "B": "b", "A": "a" }
+     * ```
+     */
+    fromIndex(index: number, backwards?: boolean): Seq<K, V>;
+
+    /**
      * Prints out the internal Btree structure of the SortedMap.
      * Keeps printing the nodes recursively until `maxDepth` level is reached.
      *
@@ -1759,7 +1784,6 @@ export module SortedMap {
      *
      */
     print(maxDepth?: number): this;
-
   }
 
 
@@ -2505,6 +2529,29 @@ export module SortedMap {
      * ```
      */
     from(value: T, backwards?: boolean): Seq.Set<T>;
+
+  /**
+     * Returns a sequence representing a portion of this sorted set starting from numeric index position,
+     * as if the collection was an array.
+     * If the optional parameter backwards is set to true, the returned sequence will
+     * list the entries backwards.
+     * 
+     * The method is optimized to quickly find the n-th entry inside the b-tree structure 
+     * by checking the computed sizes of underlying nodes. 
+     * Even though the algorithm is not as fast as working with a native array, 
+     * it is faster by orders of magnitude than walking through the first n elements 
+     * of unindexed collection to just skip them. The access time is O(log N).
+
+     * Example:
+     * ```js
+     * > abc.fromIndex(4).take(5);
+     * Seq { "E", "F", "G", "H", "I" }
+     * 
+     * > abc.fromIndex(4, true).take(5);
+     * Seq { "E", "D", "C", "B", "A" }
+     * ```
+     */
+    fromIndex(index: number, backwards?: boolean): Seq.Set<T>;
   }
 
   /**

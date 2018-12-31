@@ -84,6 +84,24 @@ export class SortedMap extends Map {
     return this._root ? this._root.get(k, notSetValue) : notSetValue;
   }
 
+  entryAt(index) {
+    return this._root
+      ? this._root.entryAt(index)
+      : new Error('index is out of bounds');
+  }
+
+  keyAt(index) {
+    return this._root
+      ? this._root.keyAt(index)
+      : new Error('index is out of bounds');
+  }
+
+  valueAt(index) {
+    return this._root
+      ? this._root.valueAt(index)
+      : new Error('index is out of bounds');
+  }
+
   // @pragma Modification
 
   clear() {
@@ -265,6 +283,45 @@ export class SortedMap extends Map {
       } else {
         self._root.iterateFrom(
           key,
+          entry => {
+            iterations++;
+            return fn(entry[1], entry[0], this);
+          },
+          reverse
+        );
+      }
+
+      return iterations;
+    };
+
+    return sequence;
+  }
+
+  fromIndex(index, backwards) {
+    const self = this;
+    const sequence = Object.create(KeyedSeq).prototype;
+    sequence.__iterateUncached = function(fn, reverse) {
+      if (reverse) {
+        throw new Error('fromIndex: reverse mode not supported');
+      }
+
+      if (!self._root) {
+        return 0;
+      }
+
+      let iterations = 0;
+      if (backwards) {
+        self._root.iterateFromIndexBackwards(
+          index,
+          entry => {
+            iterations++;
+            return fn(entry[1], entry[0], this);
+          },
+          reverse
+        );
+      } else {
+        self._root.iterateFromIndex(
+          index,
           entry => {
             iterations++;
             return fn(entry[1], entry[0], this);
