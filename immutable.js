@@ -4357,7 +4357,7 @@ var SortedMapBtreeNode = (function (SortedMapNode$$1) {
           SetRef(didChangeSize);
         }
         newEntries = setIn$2(entries, idx, entry, canEdit);
-        newNodes = nodes;
+        newNodes = clone(nodes, canEdit);
       }
     } else {
       // Inserting into entries or upserting nodes
@@ -4404,7 +4404,7 @@ var SortedMapBtreeNode = (function (SortedMapNode$$1) {
             //
             // No splitting, just setIn the updated subNode
             //
-            newEntries = entries;
+            newEntries = clone(entries, canEdit);
             newNodes = setIn$2(nodes, idx, updatedNode, canEdit);
           }
         } else {
@@ -4470,7 +4470,7 @@ var SortedMapBtreeNode = (function (SortedMapNode$$1) {
       SetRef(didChangeSize);
       var newEntry = [key, NOT_SET];
       newEntries = setIn$2(entries, idx, newEntry, canEdit);
-      newNodes = nodes;
+      newNodes = clone(nodes, canEdit);
     } else {
       // Remove from node
 
@@ -4488,7 +4488,7 @@ var SortedMapBtreeNode = (function (SortedMapNode$$1) {
           //
           // No splitting, just setIn the updated subNode
           //
-          newEntries = entries;
+          newEntries = clone(entries, canEdit);
           newNodes = setIn$2(nodes, idx, updatedNode, canEdit);
         } else {
           // Nothing changed
@@ -4560,7 +4560,7 @@ var SortedMapBtreeNode = (function (SortedMapNode$$1) {
         SetRef(didChangeSize);
         var newEntry = [key, NOT_SET];
         newEntries = setIn$2(entries, idx, newEntry, canEdit);
-        newNodes = nodes;
+        newNodes = clone(nodes, canEdit);
       } else {
         //
         // OPERATION: REMOVE entry from the LEAF
@@ -5209,6 +5209,22 @@ function indent(level) {
   return _indentStr.substring(0, indentCnt);
 }
 
+function clone(array, canEdit) {
+  if(array === undefined) {
+    return array;
+  }
+  if (canEdit) {
+    return array;
+  }
+
+  var newLen = array.length;
+  var newArray = allocArray(newLen);
+  for (var ii = 0; ii < newLen; ii++) {
+    newArray[ii] = array[ii];
+  }
+  return newArray;
+}
+
 function setIn$2(array, idx, val, canEdit) {
   if (canEdit) {
     array[idx] = val;
@@ -5799,7 +5815,7 @@ SortedMapBtreeNode.prototype.spliceNode = function(
     } else if (updatedEntry) {
       newEntries = setIn$2(entries, idx, updatedEntry, canEdit);
     } else {
-      newEntries = entries;
+      newEntries = clone(entries, canEdit);
     }
   }
 
@@ -9224,7 +9240,7 @@ function defaultConverter(k, v) {
   return isKeyed(v) ? v.toMap() : v.toList();
 }
 
-var version = "0.2.10";
+var version = "0.2.11";
 
 // Functional predicates
 // Functional read/write API
