@@ -15,7 +15,7 @@ operations implemented using [Floyd-Rivest](https://en.wikipedia.org/wiki/Floyd%
 Version
 -------
 
-The current version [immutable-sorted@0.2.10](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.10) is an extension of [immutable-js@4.0.0-rc.12](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.12).
+The current version [immutable-sorted@0.2.11](https://github.com/applitopia/immutable-sorted/releases/tag/v0.2.11) is an extension of [immutable-js@4.0.0-rc.12](https://github.com/facebook/immutable-js/releases/tag/v4.0.0-rc.12).
 
 
 Installation
@@ -105,7 +105,7 @@ Seq { "R", "Q", "P", "O", "N" }
 Seq { "R", "Q", "P", "O", "N", "M", "L" }
 ```
 
-We can also use the numeric index to efficiently iterate through the sorted collections numeric as if they were arrays. The method:
+We can also use the numeric index to efficiently iterate through the sorted collections starting from numeric index as if they were arrays. The method:
 
 ```js
 fromIndex(n, backwards) 

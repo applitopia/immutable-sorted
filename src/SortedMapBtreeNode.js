@@ -224,7 +224,7 @@ class SortedMapBtreeNode extends SortedMapNode {
           SetRef(didChangeSize);
         }
         newEntries = setIn(entries, idx, entry, canEdit);
-        newNodes = nodes;
+        newNodes = clone(nodes, canEdit);
       }
     } else {
       // Inserting into entries or upserting nodes
@@ -271,7 +271,7 @@ class SortedMapBtreeNode extends SortedMapNode {
             //
             // No splitting, just setIn the updated subNode
             //
-            newEntries = entries;
+            newEntries = clone(entries, canEdit);
             newNodes = setIn(nodes, idx, updatedNode, canEdit);
           }
         } else {
@@ -337,7 +337,7 @@ class SortedMapBtreeNode extends SortedMapNode {
       SetRef(didChangeSize);
       const newEntry = [key, NOT_SET];
       newEntries = setIn(entries, idx, newEntry, canEdit);
-      newNodes = nodes;
+      newNodes = clone(nodes, canEdit);
     } else {
       // Remove from node
 
@@ -355,7 +355,7 @@ class SortedMapBtreeNode extends SortedMapNode {
           //
           // No splitting, just setIn the updated subNode
           //
-          newEntries = entries;
+          newEntries = clone(entries, canEdit);
           newNodes = setIn(nodes, idx, updatedNode, canEdit);
         } else {
           // Nothing changed
@@ -427,7 +427,7 @@ class SortedMapBtreeNode extends SortedMapNode {
         SetRef(didChangeSize);
         const newEntry = [key, NOT_SET];
         newEntries = setIn(entries, idx, newEntry, canEdit);
-        newNodes = nodes;
+        newNodes = clone(nodes, canEdit);
       } else {
         //
         // OPERATION: REMOVE entry from the LEAF
@@ -1054,6 +1054,22 @@ function indent(level) {
     indentCnt = _indentStr.length;
   }
   return _indentStr.substring(0, indentCnt);
+}
+
+function clone(array, canEdit) {
+  if(array === undefined) {
+    return array;
+  }
+  if (canEdit) {
+    return array;
+  }
+
+  const newLen = array.length;
+  const newArray = allocArray(newLen);
+  for (let ii = 0; ii < newLen; ii++) {
+    newArray[ii] = array[ii];
+  }
+  return newArray;
 }
 
 function setIn(array, idx, val, canEdit) {
@@ -1704,7 +1720,7 @@ SortedMapBtreeNode.prototype.spliceNode = function(
     } else if (updatedEntry) {
       newEntries = setIn(entries, idx, updatedEntry, canEdit);
     } else {
-      newEntries = entries;
+      newEntries = clone(entries, canEdit);
     }
   }
 
